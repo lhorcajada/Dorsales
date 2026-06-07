@@ -7,10 +7,6 @@ interface AssignedDorsalsListProps {
   catalog: ContestCatalogRow[];
 }
 
-function formatDorsalNumber(number: number) {
-  return number.toString().padStart(2, '0');
-}
-
 export function AssignedDorsalsList({ catalog }: AssignedDorsalsListProps) {
   const assignedDorsals = catalog
     .filter((item) => item.status === 'assigned')
@@ -35,12 +31,6 @@ export function AssignedDorsalsList({ catalog }: AssignedDorsalsListProps) {
                 status="assigned"
                 label={item.assignedChildName ?? 'Asignado'}
               />
-              <div className={styles['assigned-dorsals__details']}>
-                <strong className={styles['assigned-dorsals__number']}>Dorsal {formatDorsalNumber(item.number)}</strong>
-                <span className={styles['assigned-dorsals__name']}>
-                  {item.assignedChildName ?? 'Nombre no disponible'}
-                </span>
-              </div>
             </li>
           ))}
         </ul>

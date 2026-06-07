@@ -61,12 +61,17 @@
 
 .dorsal-avatar__label {
   max-width: 100%;
-  overflow: hidden;
   color: var(--color-text);
   font-size: 0.85rem;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  text-wrap: balance;
 }
 
 .dorsal-avatar[data-status='available'] .dorsal-avatar__label {
