@@ -1,0 +1,97 @@
+.confirmation-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(7, 10, 18, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.confirmation-popup__dialog {
+  width: min(100%, 30rem);
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgba(12, 18, 31, 0.98), rgba(8, 12, 22, 0.98));
+  box-shadow: var(--shadow-soft);
+}
+
+.confirmation-popup__eyebrow,
+.confirmation-popup__timer-label {
+  margin: 0 0 0.45rem;
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.confirmation-popup__title {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.confirmation-popup__description {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.confirmation-popup__timer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(55, 214, 192, 0.08);
+}
+
+.confirmation-popup__timer-value {
+  font-size: 1.4rem;
+}
+
+.confirmation-popup__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.confirmation-popup__button--primary,
+.confirmation-popup__button--secondary {
+  min-width: 9.5rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.confirmation-popup__button--secondary {
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.confirmation-popup__button--primary {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  color: var(--color-bg);
+}
+
+.confirmation-popup__button--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .confirmation-popup__actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirmation-popup__button--primary,
+  .confirmation-popup__button--secondary {
+    width: 100%;
+  }
+}

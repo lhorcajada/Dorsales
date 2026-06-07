@@ -1,0 +1,40 @@
+.admin-screen {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.admin-screen__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-screen__card {
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-screen__card-title {
+  margin: 0 0 0.75rem;
+}
+
+.admin-screen__card-copy {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.admin-screen__card-link {
+  display: inline-flex;
+  margin-top: 1rem;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .admin-screen__grid {
+    grid-template-columns: 1fr;
+  }
+}

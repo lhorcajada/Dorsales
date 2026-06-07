@@ -1,0 +1,41 @@
+.not-found {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.not-found__card {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 420px);
+  padding: 1.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(8, 15, 26, 0.84);
+  box-shadow: var(--shadow-soft);
+}
+
+.not-found__eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.not-found__title {
+  margin: 0;
+}
+
+.not-found__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 2.9rem;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  color: #07111f;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
+  font-weight: 700;
+}

@@ -1,0 +1,47 @@
+{
+  "name": "dorsales-front",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test": "vitest",
+    "create:admin": "node scripts/create-admin-user.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.107.0",
+    "axios": "^1.10.0",
+    "date-fns": "^4.1.0",
+    "jose": "^5.10.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.4.2",
+    "supabase": "^2.105.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.24.0",
+    "vite": "^7.0.0",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,16 @@
+.utils__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.utils__container {
+  width: min(1120px, calc(100% - 2 * var(--page-padding)));
+  margin-inline: auto;
+}
