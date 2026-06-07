@@ -1,4 +1,4 @@
-:global(:root) {
+:root {
   color-scheme: dark;
   --color-bg: #07111f;
   --color-bg-elevated: rgba(13, 23, 40, 0.9);
@@ -17,11 +17,11 @@
   --page-padding: clamp(1rem, 3vw, 2rem);
 }
 
-:global(*) {
+* {
   box-sizing: border-box;
 }
 
-:global(body) {
+body {
   margin: 0;
   min-height: 100vh;
   color: var(--color-text);
@@ -32,18 +32,18 @@
   font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
 }
 
-:global(a) {
+a {
   color: inherit;
   text-decoration: none;
 }
 
-:global(button),
-:global(input),
-:global(select),
-:global(textarea) {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 
-:global(#root) {
+#root {
   min-height: 100vh;
 }

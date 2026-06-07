@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { AuthProvider } from './shared/context/AuthContext';
 import { NotificationsProvider } from './shared/context/notifications';
-import './shared/styles/theme.module.css';
+import './shared/styles/theme.css';
 
 const rootElement = document.getElementById('root');
 
