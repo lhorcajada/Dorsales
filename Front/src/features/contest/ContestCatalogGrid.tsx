@@ -21,7 +21,7 @@ export function ContestCatalogGrid({ catalog, lockedDorsalNumber, onSelectDorsal
         const isLocked = dorsal.status === 'locked' || lockedDorsalNumber === dorsal.number;
         const isAssigned = Boolean(assignedChild);
         const status = isAssigned ? 'assigned' : isLocked ? 'locked' : 'available';
-        const label = assignedChild ?? (isLocked ? 'Bloqueado' : 'Disponible');
+        const label = assignedChild ?? (isLocked ? dorsal.lockedReason ? `Seleccionado por ${dorsal.lockedReason}` : 'Bloqueado' : 'Disponible');
 
         return (
           <button

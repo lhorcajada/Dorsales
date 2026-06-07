@@ -8,6 +8,7 @@ const POLL_INTERVAL_MS = 10000;
 export function ContestStatusWatcher() {
   const { pushNotification } = useNotifications();
   const previousPausedRef = useRef<boolean | null>(null);
+  const previousOpensAtRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     let mounted = true;
@@ -30,7 +31,18 @@ export function ContestStatusWatcher() {
           });
         }
 
+        const opensAtIso = overview.opensAt ? overview.opensAt.toISOString() : null;
+
+        if (previousOpensAtRef.current !== undefined && previousOpensAtRef.current !== opensAtIso) {
+          pushNotification({
+            tone: 'info',
+            title: 'Apertura actualizada',
+            description: `El administrador ha modificado el momento de apertura. Nueva fecha: ${overview.opensAtLabel}.`,
+          });
+        }
+
         previousPausedRef.current = overview.isPaused;
+        previousOpensAtRef.current = opensAtIso;
       } catch {
         // Silent polling failure; the visible screens already handle load errors.
       }

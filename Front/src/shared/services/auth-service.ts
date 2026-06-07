@@ -45,6 +45,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   weak_password: 'La contraseña debe tener al menos 6 caracteres.',
   over_email_send_rate_limit:
     'Has pedido demasiados correos seguidos. Espera unos minutos e inténtalo de nuevo.',
+  '42501': 'No se pudo preparar tu perfil. Vuelve a intentarlo en unos segundos.',
 };
 
 const AUTH_MESSAGE_TRANSLATIONS: Record<string, string> = {
@@ -56,7 +57,11 @@ const AUTH_MESSAGE_TRANSLATIONS: Record<string, string> = {
     'La nueva contraseña debe ser distinta de la anterior.',
   'Email rate limit exceeded':
     'Has pedido demasiados correos seguidos. Espera unos minutos e inténtalo de nuevo.',
+  'new row violates row-level security policy for table "profiles"':
+    'No se pudo preparar tu perfil. Vuelve a intentarlo en unos segundos.',
 };
+
+const AUTH_ERROR_PAGE_MESSAGE = 'Se ha producido un error inesperado al iniciar sesión.';
 
 const DEFAULT_LOGIN_ERROR_MESSAGE = 'No se ha podido iniciar sesión. Inténtalo de nuevo.';
 const LOGIN_RETRY_ERROR_MESSAGE = 'No se ha podido iniciar sesión. Revisa tus datos e inténtalo de nuevo.';
@@ -177,6 +182,20 @@ export function getLocalizedAuthErrorMessage(
   }
 
   return normalizedMessage ?? fallbackMessage;
+}
+
+export function shouldRedirectAuthErrorToErrorPage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const authError = error as AuthErrorLike;
+
+  return typeof authError.status === 'number' && authError.status >= 500;
+}
+
+export function getAuthErrorPageMessage(error: unknown) {
+  return getLocalizedAuthErrorMessage(error, AUTH_ERROR_PAGE_MESSAGE);
 }
 
 export async function requestPasswordReset(email: string) {

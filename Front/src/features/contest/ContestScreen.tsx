@@ -12,6 +12,8 @@ import {
   claimDorsal,
   fetchContestCatalog,
   fetchContestOverview,
+  releaseDorsalLock,
+  reserveDorsalLock,
   type ContestCatalogRow,
   type ContestOverview,
 } from '../../shared/services/contest-service';
@@ -87,6 +89,18 @@ export default function ContestScreen() {
   const [confirmationDialog, setConfirmationDialog] = useState<ConfirmationDialogState | null>(null);
   const [infoDialog, setInfoDialog] = useState<InfoDialogState | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
+
+  const refreshContestData = async () => {
+    try {
+      const [nextCatalog, nextOverview] = await Promise.all([fetchContestCatalog(), fetchContestOverview()]);
+      setCatalog(nextCatalog);
+      setContestOverview(nextOverview);
+      setError(null);
+    } catch (catalogError) {
+      setError(catalogError instanceof Error ? catalogError.message : 'No se pudo cargar el catálogo.');
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -124,13 +138,47 @@ export default function ContestScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!currentUser || pendingDorsal) {
+      return;
+    }
+
+    const ownedSelection = catalog.find((item) => item.isLocked && item.lockedByParentId === currentUser.id);
+
+    if (!ownedSelection) {
+      return;
+    }
+
+    const currentUserDorsal = currentUser.childIds.length ? getCurrentUserDorsal(catalog, currentUser.childIds) : undefined;
+
+    setLockedDorsalNumber(ownedSelection.number);
+    setPendingDorsal(ownedSelection);
+    setConfirmationDialog(buildConfirmationDialog(ownedSelection.number, currentUserDorsal));
+  }, [catalog, currentUser, pendingDorsal]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingDorsal) {
+        void releaseDorsalLock(pendingDorsal.number).catch(() => undefined);
+      }
+    };
+  }, [pendingDorsal]);
+
   const clearPendingSelection = () => {
+    if (pendingDorsal) {
+      void releaseDorsalLock(pendingDorsal.number).catch(() => undefined);
+    }
+
     setPendingDorsal(null);
     setLockedDorsalNumber(null);
     setConfirmationDialog(null);
   };
 
-  const handleSelectDorsal = (dorsal: ContestCatalogRow) => {
+  const handleSelectDorsal = async (dorsal: ContestCatalogRow) => {
+    if (isConfirming || isReserving) {
+      return;
+    }
+
     if (!contestOverview?.isEnabled || contestOverview.isPaused) {
       clearPendingSelection();
       const blockedMessage = getContestBlockedMessage(contestOverview);
@@ -151,11 +199,40 @@ export default function ContestScreen() {
       return;
     }
 
-    const currentUserDorsal = currentUser?.childIds.length ? getCurrentUserDorsal(catalog, currentUser.childIds) : undefined;
+    const childId = currentUser?.childIds[0];
 
-    setLockedDorsalNumber(dorsal.number);
-    setPendingDorsal(dorsal);
-    setConfirmationDialog(buildConfirmationDialog(dorsal.number, currentUserDorsal));
+    if (!childId) {
+      setInfoDialog({
+        title: 'Falta un hijo asociado',
+        description: 'Debes registrar al menos un hijo en tu cuenta para poder confirmar un dorsal.',
+        actionLabel: 'Entendido',
+        onAction: () => setInfoDialog(null),
+      });
+      return;
+    }
+
+    setIsReserving(true);
+
+    try {
+      await reserveDorsalLock(childId, dorsal.number);
+      const currentUserDorsal = currentUser.childIds.length ? getCurrentUserDorsal(catalog, currentUser.childIds) : undefined;
+
+      setLockedDorsalNumber(dorsal.number);
+      setPendingDorsal(dorsal);
+      setConfirmationDialog(buildConfirmationDialog(dorsal.number, currentUserDorsal));
+    } catch (reserveError) {
+      const reserveMessage = reserveError instanceof Error ? reserveError.message : 'No se pudo bloquear el dorsal.';
+
+      clearPendingSelection();
+      setInfoDialog({
+        title: 'Dorsal no disponible',
+        description: reserveMessage,
+        actionLabel: 'Entendido',
+        onAction: () => setInfoDialog(null),
+      });
+    } finally {
+      setIsReserving(false);
+    }
   };
 
   const handleConfirmDorsal = async () => {
@@ -210,15 +287,14 @@ export default function ContestScreen() {
       setInfoDialog({
         title: 'Dorsal confirmado',
         description: `El dorsal ${formatDorsalNumber(dorsalNumber)} se ha guardado correctamente en la base de datos.`,
-        actionLabel: 'Ir a la home',
-        onAction: () => navigate(appPaths.home),
+        actionLabel: 'Entendido',
+        onAction: () => setInfoDialog(null),
       });
     } catch (saveError) {
       clearPendingSelection();
 
       const errorMessage = saveError instanceof Error ? saveError.message : '';
       const alreadyHasDorsal = errorMessage.includes('Child already has a dorsal');
-
       setInfoDialog({
         title: alreadyHasDorsal ? 'Ya tienes un dorsal asignado' : 'No se pudo guardar',
         description:
@@ -302,7 +378,7 @@ export default function ContestScreen() {
         onConfirm={handleConfirmDorsal}
         onCancel={clearPendingSelection}
         onTimeout={handleTimeout}
-        confirmDisabled={isConfirming}
+        confirmDisabled={isConfirming || isReserving}
       />
 
       <InfoPopup
@@ -310,16 +386,17 @@ export default function ContestScreen() {
         title={infoDialog?.title ?? ''}
         description={infoDialog?.description ?? ''}
         actionLabel={infoDialog?.actionLabel ?? 'Aceptar'}
-        onAction={() => {
+        onAction={async () => {
           if (!infoDialog) {
             return;
           }
 
-          infoDialog.onAction();
+          const dialogAction = infoDialog.onAction;
 
-          if (infoDialog.title === 'Tiempo agotado') {
-            setInfoDialog(null);
-          }
+          dialogAction();
+          await refreshContestData();
+
+          setInfoDialog(null);
         }}
       />
     </section>

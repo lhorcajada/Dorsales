@@ -32,6 +32,32 @@
   line-height: 1.5;
 }
 
+.home-screen__opening-info {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0.85rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 196, 87, 0.42);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(255, 196, 87, 0.16), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.home-screen__opening-info-label {
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.home-screen__opening-info-text {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .home-screen__helper--closed {
   color: var(--color-primary);
 }

@@ -7,7 +7,9 @@ import { appPaths } from '../../router/paths';
 import { useAuth } from '../../shared/hooks/useAuth';
 import { useNotifications } from '../../shared/context/useNotifications';
 import {
+  getAuthErrorPageMessage,
   getLocalizedAuthErrorMessage,
+  shouldRedirectAuthErrorToErrorPage,
 } from '../../shared/services/auth-service';
 
 import styles from './LoginScreen.module.css';
@@ -40,6 +42,16 @@ export default function LoginScreen() {
       await login({ email, password });
       navigate('/home');
     } catch (loginError) {
+      if (shouldRedirectAuthErrorToErrorPage(loginError)) {
+        const params = new URLSearchParams({
+          status: '500',
+          message: getAuthErrorPageMessage(loginError),
+        });
+
+        navigate(`${appPaths.error}?${params.toString()}`, { replace: true });
+        return;
+      }
+
       pushNotification({
         tone: 'error',
         title: 'No se ha podido iniciar sesión',

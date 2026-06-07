@@ -17,7 +17,7 @@ function formatRemaining(targetDate: Date) {
   return { days, hours, minutes, seconds };
 }
 
-export function Countdown({ targetDate, label = 'La asignación abre en' }: CountdownProps) {
+export function Countdown({ targetDate, label = 'La asignación empieza en' }: CountdownProps) {
   const [remaining, setRemaining] = useState(() => formatRemaining(targetDate));
 
   useEffect(() => {

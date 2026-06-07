@@ -21,7 +21,7 @@ export function AssignedDorsalsList({ catalog }: AssignedDorsalsListProps) {
       <div className={styles['assigned-dorsals__header']}>
         <div>
           <p className={styles['assigned-dorsals__eyebrow']}>Dorsales asignados</p>
-          <h2 className={styles['assigned-dorsals__title']}>Quién tiene cada dorsal</h2>
+          <h2 className={styles['assigned-dorsals__title']}>Listado de dorsales asignados</h2>
         </div>
         <p className={styles['assigned-dorsals__count']}>{assignedDorsals.length} asignados</p>
       </div>

@@ -109,6 +109,9 @@ export type Database = {
           number: number;
           is_locked: boolean;
           locked_reason: string | null;
+          locked_by_parent_id: string | null;
+          locked_by_child_id: string | null;
+          locked_at: string | null;
           created_at: string;
           updated_at: string;
         },
@@ -116,6 +119,9 @@ export type Database = {
           number: number;
           is_locked?: boolean;
           locked_reason?: string | null;
+          locked_by_parent_id?: string | null;
+          locked_by_child_id?: string | null;
+          locked_at?: string | null;
           created_at?: string;
           updated_at?: string;
         }
@@ -182,6 +188,9 @@ export type Database = {
           assigned_child_name: string | null;
           is_locked: boolean;
           locked_reason: string | null;
+          locked_by_parent_id: string | null;
+          locked_by_child_id: string | null;
+          locked_at: string | null;
           created_at: string;
           updated_at: string;
         },

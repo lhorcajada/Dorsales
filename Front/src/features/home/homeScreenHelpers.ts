@@ -3,7 +3,11 @@ import type { ContestOverview } from '../../shared/services/contest-service';
 export type ContestHomeState = 'pending-open' | 'open' | 'closed';
 
 export function getContestHomeState(overview: ContestOverview | null, now: Date): ContestHomeState {
-  if (!overview?.isEnabled || overview.isPaused) {
+  if (!overview) {
+    return 'closed';
+  }
+
+  if (overview.isPaused || (overview.closesAt && now > overview.closesAt)) {
     return 'closed';
   }
 
@@ -11,8 +15,8 @@ export function getContestHomeState(overview: ContestOverview | null, now: Date)
     return 'pending-open';
   }
 
-  if (overview.closesAt && now > overview.closesAt) {
-    return 'closed';
+  if (!overview.isEnabled) {
+    return 'pending-open';
   }
 
   return 'open';

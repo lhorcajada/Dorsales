@@ -10,6 +10,9 @@ export interface ContestCatalogRow {
   assignedChildName: string | null;
   isLocked: boolean;
   lockedReason: string | null;
+  lockedByParentId: string | null;
+  lockedByChildId: string | null;
+  lockedAt: string | null;
 }
 
 export interface ContestOverview {
@@ -78,6 +81,9 @@ interface DorsalCatalogRow {
   assigned_child_name: string | null;
   is_locked: boolean;
   locked_reason: string | null;
+  locked_by_parent_id: string | null;
+  locked_by_child_id: string | null;
+  locked_at: string | null;
 }
 
 interface AssignmentAttemptRow {
@@ -88,7 +94,35 @@ interface AssignmentAttemptRow {
   attempted_at: string;
 }
 
+interface SupabaseRpcError {
+  message?: string;
+  code?: string;
+}
+
 const FALLBACK_LOCKED_DORSALS = new Set([2, 18, 27]);
+
+function isMissingRpcFunction(error: SupabaseRpcError | null | undefined, functionName: string) {
+  if (!error?.message) {
+    return false;
+  }
+
+  return (
+    error.code === 'PGRST202'
+    || error.message.includes(`Could not find the function public.${functionName}`)
+  );
+}
+
+function localizeContestRpcError(message: string | undefined, fallbackMessage: string) {
+  if (!message) {
+    return fallbackMessage;
+  }
+
+  if (message.includes('Dorsal already assigned')) {
+    return 'Ese dorsal ya está asignado.';
+  }
+
+  return message;
+}
 
 function formatDateLabel(value: string | null) {
   if (!value) {
@@ -113,6 +147,9 @@ function buildFallbackCatalog(): ContestCatalogRow[] {
       assignedChildName,
       isLocked,
       lockedReason: isLocked ? 'Bloqueado para pruebas' : null,
+      lockedByParentId: null,
+      lockedByChildId: null,
+      lockedAt: null,
     };
   });
 }
@@ -175,7 +212,7 @@ async function loadContestSettings() {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('contest_settings')
-    .select('contest_name, is_enabled, opens_at, closes_at')
+    .select('contest_name, is_enabled, is_paused, opens_at, closes_at')
     .eq('id', 1)
     .maybeSingle<ContestSettingsRow>();
 
@@ -190,7 +227,7 @@ async function loadContestCatalogFromSupabase() {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('dorsal_catalog')
-    .select('number, status, assigned_child_id, assigned_child_name, is_locked, locked_reason')
+    .select('number, status, assigned_child_id, assigned_child_name, is_locked, locked_reason, locked_by_parent_id, locked_by_child_id, locked_at')
     .order('number', { ascending: true })
     .returns<DorsalCatalogRow[]>();
 
@@ -205,6 +242,9 @@ async function loadContestCatalogFromSupabase() {
     assignedChildName: row.assigned_child_name,
     isLocked: row.is_locked,
     lockedReason: row.locked_reason,
+    lockedByParentId: row.locked_by_parent_id,
+    lockedByChildId: row.locked_by_child_id,
+    lockedAt: row.locked_at,
   }));
 }
 
@@ -255,7 +295,16 @@ export async function fetchContestOverview() {
     return buildFallbackOverview(buildFallbackCatalog());
   }
 
-  const [settings, catalog] = await Promise.all([loadContestSettings(), loadContestCatalogFromSupabase()]);
+  const settings = await loadContestSettings();
+
+  let catalog: ContestCatalogRow[];
+
+  try {
+    catalog = await loadContestCatalogFromSupabase();
+  } catch {
+    catalog = buildFallbackCatalog();
+  }
+
   return buildContestOverview(settings, catalog);
 }
 
@@ -358,8 +407,78 @@ export async function claimDorsal(childId: string, dorsalNumber: number) {
   });
 
   if (error) {
-    throw error;
+    throw new Error(localizeContestRpcError(error.message, 'No se pudo confirmar el dorsal.'));
   }
 
   return data as DorsalClaimResult | null;
+}
+
+export async function reserveDorsalLock(childId: string, dorsalNumber: number) {
+  if (!hasSupabaseConfig()) {
+    throw new Error('La configuración de Supabase no está disponible en este entorno.');
+  }
+
+  const supabase = getSupabaseClient();
+  type ReserveDorsalRpcClient = {
+    rpc(
+      functionName: 'reserve_dorsal',
+      args: {
+        p_child_id: string;
+        p_dorsal_number: number;
+      },
+    ): Promise<{ data: DorsalCatalogRow | null; error: SupabaseRpcError | null }>;
+  };
+
+  const rpcClient = supabase as unknown as ReserveDorsalRpcClient;
+  const { data, error } = await rpcClient.rpc('reserve_dorsal', {
+    p_child_id: childId,
+    p_dorsal_number: dorsalNumber,
+  });
+
+  if (isMissingRpcFunction(error, 'reserve_dorsal')) {
+    return {
+      number: dorsalNumber,
+      status: 'available',
+      assigned_child_id: null,
+      assigned_child_name: null,
+      is_locked: false,
+      locked_reason: null,
+      locked_by_parent_id: null,
+      locked_by_child_id: childId,
+      locked_at: null,
+    };
+  }
+
+  if (error) {
+    throw new Error(localizeContestRpcError(error.message, 'No se pudo bloquear el dorsal.'));
+  }
+
+  return data as DorsalCatalogRow | null;
+}
+
+export async function releaseDorsalLock(dorsalNumber: number) {
+  if (!hasSupabaseConfig()) {
+    throw new Error('La configuración de Supabase no está disponible en este entorno.');
+  }
+
+  const supabase = getSupabaseClient();
+  type ReleaseDorsalLockRpcClient = {
+    rpc(
+      functionName: 'release_dorsal_lock',
+      args: {
+        p_dorsal_number: number;
+      },
+    ): Promise<{ data: DorsalCatalogRow | null; error: { message?: string } | null }>;
+  };
+
+  const rpcClient = supabase as unknown as ReleaseDorsalLockRpcClient;
+  const { data, error } = await rpcClient.rpc('release_dorsal_lock', {
+    p_dorsal_number: dorsalNumber,
+  });
+
+  if (error) {
+    throw new Error(localizeContestRpcError(error.message, 'No se pudo liberar el dorsal.'));
+  }
+
+  return data as DorsalCatalogRow | null;
 }
