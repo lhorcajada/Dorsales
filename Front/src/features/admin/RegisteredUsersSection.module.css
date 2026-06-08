@@ -1,0 +1,71 @@
+.registered-users {
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.registered-users__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.registered-users__title {
+  margin: 0;
+}
+
+.registered-users__count {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.registered-users__copy {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.registered-users__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.75rem;
+}
+
+.registered-users__item {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.registered-users__name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.registered-users__email {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.registered-users__children {
+  margin: 0;
+  color: var(--color-text-muted);
+  align-self: center;
+}
+
+@media (max-width: 960px) {
+  .registered-users__list {
+    grid-template-columns: 1fr;
+  }
+}

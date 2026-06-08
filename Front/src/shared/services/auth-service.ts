@@ -23,6 +23,13 @@ interface AuthErrorLike {
   status?: number;
 }
 
+type ChildLinkedLookupRpcClient = {
+  rpc(
+    functionName: 'is_child_already_linked',
+    args: { p_child_name: string },
+  ): Promise<{ data: boolean | null; error: { code?: string; message?: string } | null }>;
+};
+
 
 
 type IncidentStatus = 'pending' | 'review' | 'resolved';
@@ -67,6 +74,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: 'El email o la contraseña no son correctos.',
   invalid_login_credentials: 'El email o la contraseña no son correctos.',
   user_not_registered: 'Usted no está registrado en la aplicación, por favor, regístrese',
+  user_without_linked_child: 'Tu cuenta no tiene un jugador vinculado. Contacta con un administrador.',
   email_address_invalid: 'El email no tiene un formato válido.',
   weak_password: 'La contraseña debe tener al menos 6 caracteres.',
   over_email_send_rate_limit:
@@ -78,6 +86,7 @@ const AUTH_MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Email not confirmed': 'Debes confirmar tu correo antes de iniciar sesión.',
   'Invalid login credentials': 'El email o la contraseña no son correctos.',
   'User not registered': 'Usted no está registrado en la aplicación, por favor, regístrese',
+  'User without linked child': 'Tu cuenta no tiene un jugador vinculado. Contacta con un administrador.',
   'User already registered': 'El jugador ya ha sido vinculado con otra cuenta.',
   'User already register': 'El jugador ya ha sido vinculado con otra cuenta.',
   'Email address is invalid': 'El email no tiene un formato válido.',
@@ -138,6 +147,26 @@ function buildUserNotRegisteredError() {
   } satisfies AuthErrorLike;
 }
 
+function buildUserAlreadyRegisteredError() {
+  return {
+    code: 'user_already_exists',
+    status: 400,
+    message: 'User already registered',
+  } satisfies AuthErrorLike;
+}
+
+function buildUserWithoutLinkedChildError() {
+  return {
+    code: 'user_without_linked_child',
+    status: 400,
+    message: 'User without linked child',
+  } satisfies AuthErrorLike;
+}
+
+function hasLinkedChild(user: AuthUser) {
+  return user.role === 'admin' || user.childIds.length > 0;
+}
+
 async function isRegisteredUserEmail(email: string) {
   if (!hasSupabaseConfig()) {
     return true;
@@ -158,6 +187,30 @@ async function isRegisteredUserEmail(email: string) {
   }
 
   return data !== null;
+}
+
+async function isChildAlreadyLinked(childName: string) {
+  if (!hasSupabaseConfig()) {
+    return false;
+  }
+
+  const normalizedChildName = childName.trim();
+
+  if (!normalizedChildName) {
+    return false;
+  }
+
+  const supabase = getSupabaseClient();
+  const rpcClient = supabase as unknown as ChildLinkedLookupRpcClient;
+  const { data, error } = await rpcClient.rpc('is_child_already_linked', {
+    p_child_name: normalizedChildName,
+  });
+
+  if (error) {
+    return false;
+  }
+
+  return data === true;
 }
 
 async function createChildAlreadyLinkedIncident(
@@ -607,7 +660,14 @@ export async function signIn(credentials: AuthCredentials) {
   clearMockAuthUser();
 
   try {
-    return await loadCurrentUser(data.session);
+    const nextUser = await loadCurrentUser(data.session);
+
+    if (nextUser && !hasLinkedChild(nextUser)) {
+      await supabase.auth.signOut();
+      throw buildUserWithoutLinkedChildError();
+    }
+
+    return nextUser;
   } catch (loadError) {
     await createAuthErrorIncident({
       source: 'sign_in_load_user',
@@ -619,6 +679,27 @@ export async function signIn(credentials: AuthCredentials) {
 }
 
 export async function signUp(input: AuthRegisterInput) {
+  const normalizedChildName = input.childName.trim();
+
+  if (normalizedChildName) {
+    const childAlreadyLinked = await isChildAlreadyLinked(normalizedChildName);
+
+    if (childAlreadyLinked) {
+      try {
+        await createChildAlreadyLinkedIncident(
+          null,
+          input.email,
+          normalizedChildName,
+          'Child already linked before sign up',
+        );
+      } catch {
+        // Keep the signup validation error as the source of truth.
+      }
+
+      throw buildUserAlreadyRegisteredError();
+    }
+  }
+
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
@@ -627,7 +708,7 @@ export async function signUp(input: AuthRegisterInput) {
       data: {
         display_name: input.name,
         full_name: input.name,
-        child_name: input.childName,
+        child_name: normalizedChildName,
       },
     },
   });
@@ -653,42 +734,54 @@ export async function signUp(input: AuthRegisterInput) {
 
   if (data.session) {
     try {
-      await createChildForParent(data.session.user.id, input.childName);
-    } catch (childError) {
-      if (isChildAlreadyAssignedError(childError as AuthErrorLike)) {
+      let nextUser = await loadCurrentUser(data.session);
+
+      if (!nextUser || !hasLinkedChild(nextUser)) {
+        await createChildForParent(data.session.user.id, normalizedChildName);
+        nextUser = await loadCurrentUser(data.session);
+      }
+
+      if (!nextUser || !hasLinkedChild(nextUser)) {
+        await supabase.auth.signOut();
+        throw buildUserWithoutLinkedChildError();
+      }
+
+      return nextUser;
+    } catch (loadOrCreateError) {
+      if (isChildAlreadyAssignedError(loadOrCreateError as AuthErrorLike)) {
         try {
           await createChildAlreadyLinkedIncident(
             data.session.user.id,
             input.email,
-            input.childName,
-            childError instanceof Error ? childError.message : 'Child already linked to another account',
+            normalizedChildName,
+            loadOrCreateError instanceof Error
+              ? loadOrCreateError.message
+              : 'Child already linked to another account',
           );
         } catch {
           // Keep the original signup validation error as the source of truth.
         }
       } else {
         await createAuthErrorIncident({
-          source: 'sign_up_create_child',
+          source: 'sign_up_load_user',
           userEmail: input.email,
           userId: data.session.user.id,
-          error: childError,
+          error: loadOrCreateError,
         });
       }
 
-      throw childError;
+      throw loadOrCreateError;
     }
+  }
 
-    try {
-      return await loadCurrentUser(data.session);
-    } catch (loadError) {
-      await createAuthErrorIncident({
-        source: 'sign_up_load_user',
-        userEmail: input.email,
-        userId: data.session.user.id,
-        error: loadError,
-      });
-      throw loadError;
-    }
+  try {
+    await createAuthErrorIncident({
+      source: 'sign_up_no_session',
+      userEmail: input.email,
+      error: new Error('Sign up completed without session.'),
+    });
+  } catch {
+    // Keep auth flow as source of truth if incident logging fails.
   }
 
   return null;
