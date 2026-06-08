@@ -4,7 +4,9 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { SelectField } from '../../shared/components/SelectField/SelectField';
+import { useNotifications } from '../../shared/context/useNotifications';
 import { useAuth } from '../../shared/hooks/useAuth';
+import { getLocalizedAuthErrorMessage } from '../../shared/services/auth-service';
 import { fetchChildCatalogOptions, type ChildCatalogOption } from '../../shared/services/child-catalog-service';
 
 import styles from './RegisterScreen.module.css';
@@ -12,6 +14,7 @@ import styles from './RegisterScreen.module.css';
 export default function RegisterScreen() {
   const navigate = useNavigate();
   const { register, error, clearError } = useAuth();
+  const { pushNotification } = useNotifications();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,6 +63,22 @@ export default function RegisterScreen() {
     try {
       const result = await register({ name, email, password, childName });
       navigate(result.authenticated ? '/home' : '/login');
+    } catch (registerError) {
+      const isBadRequest =
+        registerError && typeof registerError === 'object' && 'status' in registerError
+          ? registerError.status === 400
+          : false;
+
+      pushNotification({
+        tone: 'error',
+        title: 'No se ha podido completar el registro',
+        description: isBadRequest
+          ? getLocalizedAuthErrorMessage(
+              registerError,
+              'Los datos del registro no son validos. Revisa la informacion e intentalo de nuevo.',
+            )
+          : getLocalizedAuthErrorMessage(registerError, 'No se pudo crear la cuenta. Intentalo de nuevo.'),
+      });
     } finally {
       setSubmitting(false);
     }

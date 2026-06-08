@@ -137,7 +137,7 @@ export type Database = {
           severity: 'low' | 'medium' | 'high';
           user_id: string | null;
           user_email: string;
-          dorsal_number: number;
+          dorsal_number: number | null;
           source: string;
           details: Json;
           created_at: string;
@@ -153,7 +153,7 @@ export type Database = {
           severity?: 'low' | 'medium' | 'high';
           user_id?: string | null;
           user_email: string;
-          dorsal_number: number;
+          dorsal_number?: number | null;
           source?: string;
           details?: Json;
           created_at?: string;

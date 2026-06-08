@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" role="img" aria-labelledby="title desc">
+  <title id="title">Camiseta Dorsales</title>
+  <desc id="desc">Icono de camiseta azul con detalle amarillo y dorsal 10.</desc>
+  <path
+    fill="#1537af"
+    stroke="#1f2937"
+    stroke-width="4.2"
+    d="M18 3 0 16 11 39 20 32v34h32V32l9 7 11-23-18-13-12 6-6-7-6 7z"
+  />
+  <path
+    fill="none"
+    stroke="#f3b71b"
+    stroke-linecap="round"
+    stroke-width="4.2"
+    d="M24 4c3.5 6.5 7.4 9.5 12 9.5s8.5-3 12-9.5"
+  />
+  <text
+    x="36"
+    y="51"
+    fill="#f8fafc"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="30"
+    font-weight="900"
+    text-anchor="middle"
+    letter-spacing="0"
+  >
+    10
+  </text>
+</svg>

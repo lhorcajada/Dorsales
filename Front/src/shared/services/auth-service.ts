@@ -22,6 +22,27 @@ interface AuthErrorLike {
   status?: number;
 }
 
+type IncidentStatus = 'pending' | 'review' | 'resolved';
+type IncidentSeverity = 'low' | 'medium' | 'high';
+
+type RegisterIncidentRpcClient = {
+  rpc(
+    functionName: 'register_incident',
+    args: {
+      p_user_id: string | null;
+      p_dorsal_number: number | null;
+      p_kind: string;
+      p_title: string;
+      p_description: string;
+      p_user_email: string | null;
+      p_status: IncidentStatus;
+      p_severity: IncidentSeverity;
+      p_source: string;
+      p_details: Record<string, unknown>;
+    },
+  ): Promise<{ error: { code?: string; message?: string } | null }>;
+};
+
 const DEV_AUTH_MOCK_ENABLED = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_MOCK !== 'false';
 const DEV_AUTH_MOCK_STORAGE_KEY = 'dorsales-dev-auth-user';
 const DEV_ADMIN_EMAIL = (import.meta.env.VITE_DEV_ADMIN_EMAIL ?? 'admin@dorsales.local').trim();
@@ -51,6 +72,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
 const AUTH_MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Email not confirmed': 'Debes confirmar tu correo antes de iniciar sesión.',
   'Invalid login credentials': 'El email o la contraseña no son correctos.',
+  'User already registered': 'El jugador ya ha sido vinculado con otra cuenta.',
+  'User already register': 'El jugador ya ha sido vinculado con otra cuenta.',
   'Email address is invalid': 'El email no tiene un formato válido.',
   'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
   'New password should be different from the old password':
@@ -65,6 +88,152 @@ const AUTH_ERROR_PAGE_MESSAGE = 'Se ha producido un error inesperado al iniciar 
 
 const DEFAULT_LOGIN_ERROR_MESSAGE = 'No se ha podido iniciar sesión. Inténtalo de nuevo.';
 const LOGIN_RETRY_ERROR_MESSAGE = 'No se ha podido iniciar sesión. Revisa tus datos e inténtalo de nuevo.';
+
+function isChildAlreadyAssignedError(error: AuthErrorLike) {
+  const message = error.message?.toLowerCase() ?? '';
+
+  return message.includes('children_full_name_unique') || message.includes('key (full_name)=');
+}
+
+function isUserAlreadyRegisteredError(error: AuthErrorLike) {
+  const normalizedCode = error.code?.trim().toLowerCase() ?? '';
+  const normalizedMessage = error.message?.trim().toLowerCase() ?? '';
+
+  return (
+    normalizedCode === 'user_already_exists' ||
+    normalizedMessage === 'user already registered' ||
+    normalizedMessage === 'user already register'
+  );
+}
+
+async function createChildAlreadyLinkedIncident(
+  userId: string | null,
+  userEmail: string,
+  childName: string,
+  cause: string,
+) {
+  await registerIncident({
+    userId,
+    userEmail,
+    kind: 'child_already_linked',
+    title: 'child_already_linked',
+    description: 'Se intento registrar una cuenta con un jugador ya vinculado a otra cuenta.',
+    status: 'review',
+    severity: 'high',
+    source: 'sign_up',
+    details: {
+      child_name: childName.trim(),
+      error: cause,
+    },
+  });
+}
+
+function getErrorDetails(error: unknown) {
+  if (error instanceof Error) {
+    const errorWithCode = error as Error & AuthErrorLike;
+
+    return {
+      message: error.message,
+      code: errorWithCode.code ?? null,
+      status: errorWithCode.status ?? null,
+    };
+  }
+
+  if (error && typeof error === 'object') {
+    const authError = error as AuthErrorLike;
+
+    return {
+      message: authError.message ?? 'Error desconocido de autenticacion.',
+      code: authError.code ?? null,
+      status: authError.status ?? null,
+    };
+  }
+
+  return {
+    message: 'Error desconocido de autenticacion.',
+    code: null,
+    status: null,
+  };
+}
+
+async function registerIncident({
+  userId,
+  userEmail,
+  kind,
+  title,
+  description,
+  status,
+  severity,
+  source,
+  details,
+}: {
+  userId: string | null;
+  userEmail: string | null;
+  kind: string;
+  title: string;
+  description: string;
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  source: string;
+  details: Record<string, unknown>;
+}) {
+  const supabase = getSupabaseClient();
+  const rpcClient = supabase as unknown as RegisterIncidentRpcClient;
+  const { error } = await rpcClient.rpc('register_incident', {
+    p_user_id: userId,
+    p_dorsal_number: null,
+    p_kind: kind,
+    p_title: title,
+    p_description: description,
+    p_user_email: userEmail,
+    p_status: status,
+    p_severity: severity,
+    p_source: source,
+    p_details: details,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function createAuthErrorIncident({
+  source,
+  userEmail,
+  userId,
+  error,
+}: {
+  source: string;
+  userEmail?: string;
+  userId?: string | null;
+  error: unknown;
+}) {
+  if (!hasSupabaseConfig()) {
+    return;
+  }
+
+  const { message, code, status } = getErrorDetails(error);
+
+  try {
+    await registerIncident({
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      kind: 'auth_error',
+      title: 'auth_error',
+      description: 'Se ha producido un error en el flujo de autenticacion.',
+      status: 'pending',
+      severity: 'medium',
+      source,
+      details: {
+        code,
+        status,
+        message,
+      },
+    });
+  } catch {
+    // Keep auth as the source of truth even if incident logging fails.
+  }
+}
 
 function canUseLocalStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -165,6 +334,11 @@ export function getLocalizedAuthErrorMessage(
   }
 
   const authError = error as AuthErrorLike;
+
+  if (isChildAlreadyAssignedError(authError)) {
+    return 'El jugador ya ha sido vinculado con otra cuenta.';
+  }
+
   const normalizedCode = authError.code?.trim().toLowerCase();
 
   if (normalizedCode && AUTH_ERROR_MESSAGES[normalizedCode]) {
@@ -204,6 +378,7 @@ export async function requestPasswordReset(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
   if (error) {
+    await createAuthErrorIncident({ source: 'request_password_reset', userEmail: email, error });
     throw error;
   }
 }
@@ -213,6 +388,7 @@ export async function updatePassword(password: string) {
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
+    await createAuthErrorIncident({ source: 'update_password', error });
     throw error;
   }
 }
@@ -272,7 +448,7 @@ async function loadChildren(parentId: string) {
   return (data ?? []).map((child) => child.id);
 }
 
-async function upsertChild(parentId: string, childName: string) {
+async function createChildForParent(parentId: string, childName: string) {
   const trimmedName = childName.trim();
 
   if (!trimmedName) {
@@ -280,12 +456,11 @@ async function upsertChild(parentId: string, childName: string) {
   }
 
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from('children').upsert(
+  const { error } = await supabase.from('children').insert(
     {
       parent_id: parentId,
       full_name: trimmedName,
     } as never,
-    { onConflict: 'parent_id,full_name' },
   );
 
   if (error) {
@@ -321,10 +496,16 @@ export async function getSignedInUser() {
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
+    await createAuthErrorIncident({ source: 'get_signed_in_user', error });
     throw error;
   }
 
-  return loadCurrentUser(data.session);
+  try {
+    return await loadCurrentUser(data.session);
+  } catch (loadError) {
+    await createAuthErrorIncident({ source: 'get_signed_in_user_load_user', error: loadError });
+    throw loadError;
+  }
 }
 
 export async function signIn(credentials: AuthCredentials) {
@@ -341,11 +522,22 @@ export async function signIn(credentials: AuthCredentials) {
   const { data, error } = await supabase.auth.signInWithPassword(credentials);
 
   if (error) {
+    await createAuthErrorIncident({ source: 'sign_in', userEmail: credentials.email, error });
     throw error;
   }
 
   clearMockAuthUser();
-  return loadCurrentUser(data.session);
+
+  try {
+    return await loadCurrentUser(data.session);
+  } catch (loadError) {
+    await createAuthErrorIncident({
+      source: 'sign_in_load_user',
+      userEmail: credentials.email,
+      error: loadError,
+    });
+    throw loadError;
+  }
 }
 
 export async function signUp(input: AuthRegisterInput) {
@@ -363,12 +555,62 @@ export async function signUp(input: AuthRegisterInput) {
   });
 
   if (error) {
+    if (isUserAlreadyRegisteredError(error as AuthErrorLike)) {
+      try {
+        await createChildAlreadyLinkedIncident(
+          null,
+          input.email,
+          input.childName,
+          error instanceof Error ? error.message : 'User already registered',
+        );
+      } catch {
+        // Keep the signup error as the main response even if incident logging fails.
+      }
+    } else {
+      await createAuthErrorIncident({ source: 'sign_up', userEmail: input.email, error });
+    }
+
     throw error;
   }
 
   if (data.session) {
-    await upsertChild(data.session.user.id, input.childName);
-    return loadCurrentUser(data.session);
+    try {
+      await createChildForParent(data.session.user.id, input.childName);
+    } catch (childError) {
+      if (isChildAlreadyAssignedError(childError as AuthErrorLike)) {
+        try {
+          await createChildAlreadyLinkedIncident(
+            data.session.user.id,
+            input.email,
+            input.childName,
+            childError instanceof Error ? childError.message : 'Child already linked to another account',
+          );
+        } catch {
+          // Keep the original signup validation error as the source of truth.
+        }
+      } else {
+        await createAuthErrorIncident({
+          source: 'sign_up_create_child',
+          userEmail: input.email,
+          userId: data.session.user.id,
+          error: childError,
+        });
+      }
+
+      throw childError;
+    }
+
+    try {
+      return await loadCurrentUser(data.session);
+    } catch (loadError) {
+      await createAuthErrorIncident({
+        source: 'sign_up_load_user',
+        userEmail: input.email,
+        userId: data.session.user.id,
+        error: loadError,
+      });
+      throw loadError;
+    }
   }
 
   return null;
@@ -388,6 +630,7 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
 
   if (error) {
+    await createAuthErrorIncident({ source: 'sign_out', error });
     throw error;
   }
 

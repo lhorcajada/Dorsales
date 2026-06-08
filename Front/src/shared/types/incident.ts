@@ -9,7 +9,7 @@ export interface IncidentRecord {
   status: IncidentStatus;
   severity: IncidentSeverity;
   userEmail: string;
-  dorsalNumber: number;
+  dorsalNumber: number | null;
   source: string;
   createdAt: string;
   updatedAt: string;

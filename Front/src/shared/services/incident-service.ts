@@ -10,7 +10,7 @@ interface IncidentRow {
   status: IncidentStatus;
   severity: IncidentSeverity;
   user_email: string;
-  dorsal_number: number;
+  dorsal_number: number | null;
   source: string;
   created_at: string;
   updated_at: string;

@@ -9,7 +9,11 @@ import type { IncidentRecord, IncidentSummary } from '../../shared/types/inciden
 
 import styles from './IncidentsScreen.module.css';
 
-function formatDorsalNumber(number: number) {
+function formatDorsalNumber(number: number | null) {
+  if (number === null) {
+    return 'Sin dorsal';
+  }
+
   return number.toString().padStart(2, '0');
 }
 
@@ -35,6 +39,15 @@ function getSeverityLabel(severity: IncidentRecord['severity']) {
   }
 
   return 'Baja';
+}
+
+const INCIDENT_TITLE_LABELS: Record<string, string> = {
+  auth_error: 'Error de autenticacion',
+  child_already_linked: 'Jugador ya vinculado',
+};
+
+function getIncidentTitleLabel(title: string) {
+  return INCIDENT_TITLE_LABELS[title] ?? title;
 }
 
 export default function IncidentsScreen() {
@@ -112,14 +125,14 @@ export default function IncidentsScreen() {
             <div className={styles['incidents-screen__card-header']}>
               <div>
                 <p className={styles['incidents-screen__eyebrow']}>{incident.kind}</p>
-                <h3 className={styles['incidents-screen__title']}>{incident.title}</h3>
+                <h3 className={styles['incidents-screen__title']}>{getIncidentTitleLabel(incident.title)}</h3>
               </div>
               <span className={styles[`incidents-screen__badge--${incident.status}`]}>{getStatusLabel(incident.status)}</span>
             </div>
             <p className={styles['incidents-screen__copy']}>{incident.description}</p>
             <div className={styles['incidents-screen__meta']}>
               <span>{incident.userEmail}</span>
-              <span>Dorsal {formatDorsalNumber(incident.dorsalNumber)}</span>
+              <span>{incident.dorsalNumber === null ? 'Sin dorsal asociado' : `Dorsal ${formatDorsalNumber(incident.dorsalNumber)}`}</span>
             </div>
             <div className={styles['incidents-screen__meta']}>
               <span>{getSeverityLabel(incident.severity)}</span>
