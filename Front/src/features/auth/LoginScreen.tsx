@@ -15,6 +15,7 @@ import {
 import styles from './LoginScreen.module.css';
 
 const INVALID_CREDENTIALS_MESSAGE = 'El email o la contraseña no son correctos.';
+const USER_NOT_REGISTERED_MESSAGE = 'Usted no está registrado en la aplicación, por favor, regístrese';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
@@ -58,7 +59,10 @@ export default function LoginScreen() {
 
       const localizedMessage = getLocalizedAuthErrorMessage(loginError);
 
-      if (localizedMessage === INVALID_CREDENTIALS_MESSAGE) {
+      if (
+        localizedMessage === INVALID_CREDENTIALS_MESSAGE ||
+        localizedMessage === USER_NOT_REGISTERED_MESSAGE
+      ) {
         setHighlightRegisterLink(true);
       }
 
@@ -78,7 +82,7 @@ export default function LoginScreen() {
         <p className={styles['auth-screen__eyebrow']}>Acceso de usuarios</p>
         <h1 className={styles['auth-screen__title']}>Entra y prepárate para elegir el dorsal.</h1>
         <p className={styles['auth-screen__copy']}>
-          Crea tu cuenta y accede a todas las funcionalidades.
+          Crea tu cuenta sino la has creado todavía.
         </p>
 
         {error ? <p className={styles['auth-screen__copy']}>{error}</p> : null}

@@ -12,6 +12,7 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest",
+    "test:e2e": "playwright test",
     "create:admin": "node scripts/create-admin-user.mjs"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.6.1",

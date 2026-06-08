@@ -22,6 +22,8 @@ interface AuthErrorLike {
   status?: number;
 }
 
+
+
 type IncidentStatus = 'pending' | 'review' | 'resolved';
 type IncidentSeverity = 'low' | 'medium' | 'high';
 
@@ -62,6 +64,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   email_not_confirmed: 'Debes confirmar tu correo antes de iniciar sesión.',
   invalid_credentials: 'El email o la contraseña no son correctos.',
   invalid_login_credentials: 'El email o la contraseña no son correctos.',
+  user_not_registered: 'Usted no está registrado en la aplicación, por favor, regístrese',
   email_address_invalid: 'El email no tiene un formato válido.',
   weak_password: 'La contraseña debe tener al menos 6 caracteres.',
   over_email_send_rate_limit:
@@ -72,6 +75,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
 const AUTH_MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Email not confirmed': 'Debes confirmar tu correo antes de iniciar sesión.',
   'Invalid login credentials': 'El email o la contraseña no son correctos.',
+  'User not registered': 'Usted no está registrado en la aplicación, por favor, regístrese',
   'User already registered': 'El jugador ya ha sido vinculado con otra cuenta.',
   'User already register': 'El jugador ya ha sido vinculado con otra cuenta.',
   'Email address is invalid': 'El email no tiene un formato válido.',
@@ -104,6 +108,54 @@ function isUserAlreadyRegisteredError(error: AuthErrorLike) {
     normalizedMessage === 'user already registered' ||
     normalizedMessage === 'user already register'
   );
+}
+
+function isInvalidCredentialsError(error: AuthErrorLike) {
+  const normalizedCode = error.code?.trim().toLowerCase() ?? '';
+  const normalizedMessage = error.message?.trim().toLowerCase() ?? '';
+  const hasInvalidCredentialsMessage =
+    normalizedMessage.includes('invalid login credentials') ||
+    normalizedMessage.includes('invalid credentials') ||
+    normalizedMessage.includes('email or password') ||
+    normalizedMessage.includes('email o la contrase') ||
+    normalizedMessage.includes('contrase');
+
+  return (
+    normalizedCode === 'invalid_credentials' ||
+    normalizedCode === 'invalid_login_credentials' ||
+    hasInvalidCredentialsMessage ||
+    error.status === 400
+  );
+}
+
+function buildUserNotRegisteredError() {
+  return {
+    code: 'user_not_registered',
+    status: 400,
+    message: 'User not registered',
+  } satisfies AuthErrorLike;
+}
+
+async function isRegisteredUserEmail(email: string) {
+  if (!hasSupabaseConfig()) {
+    return true;
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('email')
+    .ilike('email', email.trim())
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    // Si falla la consulta (ej. sin política anon) asumimos que el usuario podría existir
+    // para no bloquear el flujo de login con el mensaje incorrecto.
+    return true;
+  }
+
+  return data !== null;
 }
 
 async function createChildAlreadyLinkedIncident(
@@ -522,6 +574,24 @@ export async function signIn(credentials: AuthCredentials) {
   const { data, error } = await supabase.auth.signInWithPassword(credentials);
 
   if (error) {
+    if (isInvalidCredentialsError(error as AuthErrorLike)) {
+      try {
+        const isRegistered = await isRegisteredUserEmail(credentials.email);
+
+        if (!isRegistered) {
+          throw buildUserNotRegisteredError();
+        }
+      } catch (lookupError) {
+        if (
+          lookupError &&
+          typeof lookupError === 'object' &&
+          (lookupError as AuthErrorLike).code === 'user_not_registered'
+        ) {
+          throw lookupError;
+        }
+      }
+    }
+
     await createAuthErrorIncident({ source: 'sign_in', userEmail: credentials.email, error });
     throw error;
   }
