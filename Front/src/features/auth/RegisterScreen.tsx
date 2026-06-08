@@ -128,11 +128,11 @@ export default function RegisterScreen() {
           </label>
 
           <SelectField
-            label="Nombre del niño"
+            label="Nombre del jugador"
             value={childName}
             onChange={setChildName}
             options={childOptions}
-            placeholder={childrenLoading ? 'Cargando catálogo...' : 'Selecciona un niño'}
+            placeholder={childrenLoading ? 'Cargando catálogo...' : 'Selecciona un jugador'}
             hint="El catálogo sale de la base de datos y evita nombres escritos a mano."
             disabled={submitting || childrenLoading || childOptions.length === 0}
             required

@@ -52,6 +52,12 @@
   font-size: 1.5rem;
 }
 
+.app-shell__linked-child {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
 .app-shell__nav {
   display: flex;
   flex-wrap: wrap;

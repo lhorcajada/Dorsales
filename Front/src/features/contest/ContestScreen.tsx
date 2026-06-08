@@ -56,20 +56,6 @@ function getCurrentUserDorsal(catalog: ContestCatalogRow[], childIds: string[]) 
   return catalog.find((item) => item.assignedChildId !== null && childIds.includes(item.assignedChildId));
 }
 
-function getLinkedChildName(catalog: ContestCatalogRow[], childIds: string[], childNames: string[]) {
-  const profileChildName = childNames.find((name) => name.trim() !== '');
-
-  if (profileChildName) {
-    return profileChildName;
-  }
-
-  const assignedRow = catalog.find(
-    (item) => item.assignedChildId !== null && childIds.includes(item.assignedChildId),
-  );
-
-  return assignedRow?.assignedChildName ?? null;
-}
-
 function isPendingOpen(contestOverview: ContestOverview | null, now: Date) {
   if (!contestOverview) {
     return false;
@@ -129,7 +115,6 @@ export default function ContestScreen() {
   const [infoDialog, setInfoDialog] = useState<InfoDialogState | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isReserving, setIsReserving] = useState(false);
-  const linkedChildName = getLinkedChildName(catalog, currentUser?.childIds ?? [], currentUser?.childNames ?? []);
 
   const refreshContestData = async () => {
     try {
@@ -396,7 +381,7 @@ export default function ContestScreen() {
       <PageHeader
         eyebrow="Modo concurso"
         title="Selecciona un dorsal"
-        description={linkedChildName ? `Niño vinculado: ${linkedChildName}` : ''}
+        description=""
         actions={(
           <button type="button" className={styles['contest-screen__back-button']} onClick={handleBack}>
             Volver

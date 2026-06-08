@@ -10,6 +10,7 @@ export function AppShell() {
   const userName = currentUser?.name ?? 'Invitado';
   const userRole = currentUser?.role === 'admin' ? 'Administrador' : 'Usuario';
   const canAccessAdmin = currentUser?.role === 'admin';
+  const linkedChildName = currentUser?.childNames.find((name) => name.trim() !== '') ?? null;
 
   return (
     <div className={styles['app-shell']}>
@@ -19,8 +20,11 @@ export function AppShell() {
         <div className={styles['app-shell__brand']}>
           <span className={styles['app-shell__brand-mark']}>D</span>
           <div className={styles['app-shell__brand-content']}>
-            <p className={styles['app-shell__eyebrow']}>Información para familias</p>
+            <p className={styles['app-shell__eyebrow']}>Concurso de asignación de dorsales</p>
             <h1 className={styles['app-shell__title']}>Dorsales del equipo</h1>
+            {linkedChildName ? (
+              <p className={styles['app-shell__linked-child']}>Jugador vinculado: {linkedChildName}</p>
+            ) : null}
           </div>
         </div>
 
