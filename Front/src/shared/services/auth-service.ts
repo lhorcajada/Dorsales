@@ -14,6 +14,7 @@ interface ProfileRow {
 
 interface ChildRow {
   id: string;
+  full_name: string;
 }
 
 interface AuthErrorLike {
@@ -58,6 +59,7 @@ const DEV_ADMIN_USER: AuthUser = {
   email: DEV_ADMIN_EMAIL,
   role: 'admin',
   childIds: [],
+  childNames: [],
 };
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -321,6 +323,7 @@ function readMockAuthUser() {
       ...parsedUser,
       role: 'admin',
       childIds: Array.isArray(parsedUser.childIds) ? parsedUser.childIds : [],
+      childNames: Array.isArray(parsedUser.childNames) ? parsedUser.childNames : [],
     } satisfies AuthUser;
   } catch {
     return null;
@@ -489,7 +492,7 @@ async function loadChildren(parentId: string) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('children')
-    .select('id')
+    .select('id, full_name')
     .eq('parent_id', parentId)
     .returns<ChildRow[]>();
 
@@ -497,7 +500,7 @@ async function loadChildren(parentId: string) {
     throw error;
   }
 
-  return (data ?? []).map((child) => child.id);
+  return data ?? [];
 }
 
 async function createChildForParent(parentId: string, childName: string) {
@@ -528,7 +531,11 @@ async function loadCurrentUser(session: Session | null) {
   clearMockAuthUser();
 
   const profile = await ensureProfile(session.user);
-  const childIds = await loadChildren(session.user.id);
+  const children = await loadChildren(session.user.id);
+  const childIds = children.map((child) => child.id);
+  const childNames = children
+    .map((child) => child.full_name?.trim())
+    .filter((name): name is string => Boolean(name));
 
   return {
     id: profile.id,
@@ -536,6 +543,7 @@ async function loadCurrentUser(session: Session | null) {
     email: profile.email,
     role: normalizeRole(profile.role),
     childIds,
+    childNames,
   } satisfies AuthUser;
 }
 

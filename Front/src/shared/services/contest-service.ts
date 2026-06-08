@@ -392,37 +392,18 @@ export async function restartContest() {
 
   const supabase = getSupabaseClient();
 
-  const { error: deleteChildrenError } = await supabase
-    .from('children')
-    .delete()
-    .not('id', 'is', null);
+  type RestartContestRpcClient = {
+    rpc(
+      functionName: 'restart_contest',
+      args?: Record<string, never>,
+    ): Promise<{ error: { message?: string } | null }>;
+  };
 
-  if (deleteChildrenError) {
-    throw new Error('No se pudo eliminar la vinculación entre padres e hijos.');
-  }
+  const rpcClient = supabase as unknown as RestartContestRpcClient;
+  const { error } = await rpcClient.rpc('restart_contest');
 
-  const { error: deleteAssignmentsError } = await supabase
-    .from('dorsal_assignments')
-    .delete()
-    .gte('dorsal_number', 1);
-
-  if (deleteAssignmentsError) {
-    throw new Error('No se pudieron eliminar las asignaciones actuales.');
-  }
-
-  const { error: unlockDorsalsError } = await supabase
-    .from('dorsals')
-    .update({
-      is_locked: false,
-      locked_reason: null,
-      locked_by_parent_id: null,
-      locked_by_child_id: null,
-      locked_at: null,
-    } as never)
-    .eq('is_locked', true);
-
-  if (unlockDorsalsError) {
-    throw new Error('No se pudieron desbloquear los dorsales del concurso.');
+  if (error) {
+    throw new Error(error.message ?? 'No se pudo reiniciar el concurso.');
   }
 }
 

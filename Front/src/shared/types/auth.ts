@@ -16,4 +16,5 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   childIds: string[];
+  childNames: string[];
 }
