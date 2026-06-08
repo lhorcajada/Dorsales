@@ -78,6 +78,15 @@ export default function AdminScreen() {
     setOverview((current) => (current ? { ...current, settings: nextSettings } : current));
   };
 
+  const handleContestRestarted = async () => {
+    try {
+      const nextOverview = await fetchAdminOverview();
+      setOverview(nextOverview);
+    } catch (overviewError) {
+      setError(overviewError instanceof Error ? overviewError.message : 'No se pudo actualizar el panel.');
+    }
+  };
+
   return (
     <section className={styles['admin-screen']}>
       <PageHeader
@@ -86,7 +95,11 @@ export default function AdminScreen() {
         description="Apertura y cierre del reparto, gestión de incidencias."
       />
 
-      <ContestScheduleForm settings={overview?.settings ?? null} onSaved={handleSettingsSaved} />
+      <ContestScheduleForm
+        settings={overview?.settings ?? null}
+        onSaved={handleSettingsSaved}
+        onContestRestarted={handleContestRestarted}
+      />
 
       <div className={styles['admin-screen__grid']}>
         <article className={styles['admin-screen__card']}>

@@ -5,6 +5,7 @@ type AdminSettings = NonNullable<AdminOverview['settings']>;
 export interface ContestScheduleFormProps {
   settings: AdminSettings | null;
   onSaved: (settings: AdminSettings) => void;
+  onContestRestarted: () => Promise<void> | void;
 }
 
 export interface ContestScheduleFormState {

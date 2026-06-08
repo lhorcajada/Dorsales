@@ -6,12 +6,12 @@ interface ConfirmationPopupProps {
   open: boolean;
   title: string;
   description: string;
-  countdownSeconds: number;
+  countdownSeconds?: number;
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
-  onTimeout: () => void;
+  onTimeout?: () => void;
   confirmDisabled?: boolean;
 }
 
@@ -27,18 +27,29 @@ export function ConfirmationPopup({
   onTimeout,
   confirmDisabled = false,
 }: ConfirmationPopupProps) {
-  const [remainingSeconds, setRemainingSeconds] = useState(countdownSeconds);
+  const [remainingSeconds, setRemainingSeconds] = useState(countdownSeconds ?? 0);
   const intervalRef = useRef<number | null>(null);
   const hasTimedOutRef = useRef(false);
   const timeoutRef = useRef(onTimeout);
+  const hasCountdown = typeof countdownSeconds === 'number' && countdownSeconds > 0;
 
   useEffect(() => {
     timeoutRef.current = onTimeout;
   }, [onTimeout]);
 
   useEffect(() => {
+    if (!hasCountdown) {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setRemainingSeconds(0);
+      hasTimedOutRef.current = false;
+      return;
+    }
+
     if (!open) {
-      setRemainingSeconds(countdownSeconds);
+      setRemainingSeconds(countdownSeconds ?? 0);
       hasTimedOutRef.current = false;
       if (intervalRef.current !== null) {
         window.clearInterval(intervalRef.current);
@@ -48,7 +59,7 @@ export function ConfirmationPopup({
     }
 
     hasTimedOutRef.current = false;
-    setRemainingSeconds(countdownSeconds);
+    setRemainingSeconds(countdownSeconds ?? 0);
     if (intervalRef.current !== null) {
       window.clearInterval(intervalRef.current);
     }
@@ -63,10 +74,10 @@ export function ConfirmationPopup({
         intervalRef.current = null;
       }
     };
-  }, [countdownSeconds, open]);
+  }, [countdownSeconds, hasCountdown, open]);
 
   useEffect(() => {
-    if (!open || remainingSeconds > 0 || hasTimedOutRef.current) {
+    if (!hasCountdown || !open || remainingSeconds > 0 || hasTimedOutRef.current || !timeoutRef.current) {
       return;
     }
 
@@ -78,7 +89,7 @@ export function ConfirmationPopup({
     }
 
     timeoutRef.current();
-  }, [open, remainingSeconds]);
+  }, [hasCountdown, open, remainingSeconds]);
 
   if (!open) {
     return null;
@@ -102,10 +113,12 @@ export function ConfirmationPopup({
           {description}
         </p>
 
-        <div className={styles['confirmation-popup__timer']}>
-          <span className={styles['confirmation-popup__timer-label']}>Tiempo restante</span>
-          <strong className={styles['confirmation-popup__timer-value']}>{remainingSeconds}s</strong>
-        </div>
+        {hasCountdown ? (
+          <div className={styles['confirmation-popup__timer']}>
+            <span className={styles['confirmation-popup__timer-label']}>Tiempo restante</span>
+            <strong className={styles['confirmation-popup__timer-value']}>{remainingSeconds}s</strong>
+          </div>
+        ) : null}
 
         <div className={styles['confirmation-popup__actions']}>
           <button type="button" className={styles['confirmation-popup__button--secondary']} onClick={onCancel}>
@@ -115,7 +128,7 @@ export function ConfirmationPopup({
             type="button"
             className={styles['confirmation-popup__button--primary']}
             onClick={onConfirm}
-            disabled={remainingSeconds === 0 || confirmDisabled}
+            disabled={(hasCountdown && remainingSeconds === 0) || confirmDisabled}
           >
             {confirmLabel}
           </button>

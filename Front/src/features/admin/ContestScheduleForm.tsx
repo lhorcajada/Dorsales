@@ -1,15 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { updateContestSchedule } from '../../shared/services/contest-service';
+import { restartContest, updateContestSchedule } from '../../shared/services/contest-service';
+import { ConfirmationPopup } from '../../shared/components/ConfirmationPopup/ConfirmationPopup';
 import { useNotifications } from '../../shared/context/useNotifications';
 
 import { buildContestScheduleFormState, formatDateLabel, type ContestScheduleFormState, type ContestScheduleFormProps } from './contestScheduleFormHelpers';
 import styles from './ContestScheduleForm.module.css';
 
-export function ContestScheduleForm({ settings, onSaved }: ContestScheduleFormProps) {
+export function ContestScheduleForm({ settings, onSaved, onContestRestarted }: ContestScheduleFormProps) {
   const [formState, setFormState] = useState<ContestScheduleFormState>(() => buildContestScheduleFormState(settings));
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
+  const [isRestartPopupOpen, setIsRestartPopupOpen] = useState(false);
   const { pushNotification } = useNotifications();
 
   useEffect(() => {
@@ -71,6 +73,35 @@ export function ContestScheduleForm({ settings, onSaved }: ContestScheduleFormPr
     void persistSettings(settings?.isPaused ?? false);
   };
 
+  const executeRestartContest = async () => {
+    setStatus('saving');
+    setMessage(null);
+    setIsRestartPopupOpen(false);
+
+    try {
+      await restartContest();
+      await onContestRestarted();
+      setStatus('success');
+      setMessage('El concurso se ha reiniciado.');
+      pushNotification({
+        tone: 'warning',
+        title: 'Concurso reiniciado',
+        description: 'Se han eliminado las asignaciones y desbloqueado los dorsales reservados.',
+      });
+    } catch (restartError) {
+      setStatus('error');
+      setMessage(restartError instanceof Error ? restartError.message : 'No se pudo reiniciar el concurso.');
+    }
+  };
+
+  const handleRestartContestClick = () => {
+    if (status === 'saving' || !settings) {
+      return;
+    }
+
+    setIsRestartPopupOpen(true);
+  };
+
   return (
     <article className={styles['contest-schedule-form']}>
       <div className={styles['contest-schedule-form__copy']}>
@@ -124,12 +155,32 @@ export function ContestScheduleForm({ settings, onSaved }: ContestScheduleFormPr
           {settings?.isPaused ? 'Reanudar tiempo' : 'Detener tiempo'}
         </button>
 
+        <button
+          type="button"
+          className={styles['contest-schedule-form__restart']}
+          disabled={status === 'saving' || !settings}
+          onClick={handleRestartContestClick}
+        >
+          Reiniciar concurso
+        </button>
+
         {message ? (
           <p className={status === 'error' ? styles['contest-schedule-form__message--error'] : styles['contest-schedule-form__message']}>
             {message}
           </p>
         ) : null}
       </form>
+
+      <ConfirmationPopup
+        open={isRestartPopupOpen}
+        title="Reiniciar concurso"
+        description="Se eliminaran todas las asignaciones, se desbloquearan dorsales reservados y se borrara la vinculacion entre padres e hijos. Esta accion no se puede deshacer."
+        confirmLabel="Si, reiniciar"
+        cancelLabel="Cancelar"
+        onConfirm={() => void executeRestartContest()}
+        onCancel={() => setIsRestartPopupOpen(false)}
+        confirmDisabled={status === 'saving'}
+      />
     </article>
   );
 }

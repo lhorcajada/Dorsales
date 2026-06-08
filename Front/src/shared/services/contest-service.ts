@@ -348,6 +348,7 @@ export async function updateContestSchedule(input: ContestScheduleInput) {
   const supabase = getSupabaseClient();
   const payload = {
     is_enabled: input.isEnabled,
+    is_paused: input.isPaused,
     opens_at: input.opensAt,
     closes_at: input.closesAt,
   };
@@ -356,7 +357,7 @@ export async function updateContestSchedule(input: ContestScheduleInput) {
     .from('contest_settings')
     .update(payload as never)
     .eq('id', 1)
-    .select('contest_name, is_enabled, opens_at, closes_at')
+    .select('contest_name, is_enabled, is_paused, opens_at, closes_at')
     .maybeSingle<ContestSettingsRow>();
 
   if (error) {
@@ -367,7 +368,7 @@ export async function updateContestSchedule(input: ContestScheduleInput) {
     const { data: inserted, error: insertError } = await supabase
       .from('contest_settings')
       .insert([{ id: 1, contest_name: 'Asignación de dorsales', ...payload }] as never)
-      .select('contest_name, is_enabled, opens_at, closes_at')
+      .select('contest_name, is_enabled, is_paused, opens_at, closes_at')
       .maybeSingle<ContestSettingsRow>();
 
     if (insertError) {
@@ -382,6 +383,47 @@ export async function updateContestSchedule(input: ContestScheduleInput) {
   }
 
   return data;
+}
+
+export async function restartContest() {
+  if (!hasSupabaseConfig()) {
+    throw new Error('La configuración de Supabase no está disponible en este entorno.');
+  }
+
+  const supabase = getSupabaseClient();
+
+  const { error: deleteChildrenError } = await supabase
+    .from('children')
+    .delete()
+    .not('id', 'is', null);
+
+  if (deleteChildrenError) {
+    throw new Error('No se pudo eliminar la vinculación entre padres e hijos.');
+  }
+
+  const { error: deleteAssignmentsError } = await supabase
+    .from('dorsal_assignments')
+    .delete()
+    .gte('dorsal_number', 1);
+
+  if (deleteAssignmentsError) {
+    throw new Error('No se pudieron eliminar las asignaciones actuales.');
+  }
+
+  const { error: unlockDorsalsError } = await supabase
+    .from('dorsals')
+    .update({
+      is_locked: false,
+      locked_reason: null,
+      locked_by_parent_id: null,
+      locked_by_child_id: null,
+      locked_at: null,
+    } as never)
+    .eq('is_locked', true);
+
+  if (unlockDorsalsError) {
+    throw new Error('No se pudieron desbloquear los dorsales del concurso.');
+  }
 }
 
 export async function claimDorsal(childId: string, dorsalNumber: number) {

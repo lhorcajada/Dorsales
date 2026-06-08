@@ -82,11 +82,25 @@
   font-weight: 700;
 }
 
+.contest-schedule-form__restart {
+  justify-self: start;
+  padding: 0.85rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 55%, transparent);
+  border-radius: 999px;
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  font-weight: 700;
+}
+
 .contest-schedule-form__submit:disabled {
   opacity: 0.72;
 }
 
 .contest-schedule-form__pause:disabled {
+  opacity: 0.52;
+}
+
+.contest-schedule-form__restart:disabled {
   opacity: 0.52;
 }
 
