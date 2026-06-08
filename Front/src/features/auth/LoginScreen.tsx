@@ -14,6 +14,8 @@ import {
 
 import styles from './LoginScreen.module.css';
 
+const INVALID_CREDENTIALS_MESSAGE = 'El email o la contraseña no son correctos.';
+
 export default function LoginScreen() {
   const navigate = useNavigate();
   const { login, error, clearError } = useAuth();
@@ -21,6 +23,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [highlightRegisterLink, setHighlightRegisterLink] = useState(false);
   const canSubmit = email.trim() !== '' && password.trim() !== '' && !submitting;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -37,6 +40,7 @@ export default function LoginScreen() {
 
     setSubmitting(true);
     clearError();
+    setHighlightRegisterLink(false);
 
     try {
       await login({ email, password });
@@ -52,10 +56,16 @@ export default function LoginScreen() {
         return;
       }
 
+      const localizedMessage = getLocalizedAuthErrorMessage(loginError);
+
+      if (localizedMessage === INVALID_CREDENTIALS_MESSAGE) {
+        setHighlightRegisterLink(true);
+      }
+
       pushNotification({
         tone: 'error',
         title: 'No se ha podido iniciar sesión',
-        description: getLocalizedAuthErrorMessage(loginError),
+        description: localizedMessage,
       });
     } finally {
       setSubmitting(false);
@@ -80,7 +90,10 @@ export default function LoginScreen() {
               autoComplete="username"
               required
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setHighlightRegisterLink(false);
+              }}
               type="email"
             />
           </label>
@@ -91,7 +104,10 @@ export default function LoginScreen() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setHighlightRegisterLink(false);
+              }}
               type="password"
             />
           </label>
@@ -101,12 +117,21 @@ export default function LoginScreen() {
           </button>
         </form>
 
-        <p className={styles['auth-screen__footer']}>
-          ¿No tienes cuenta? <Link to="/register">Crear acceso</Link>
+        <p
+          className={styles['auth-screen__footer']}
+          data-highlighted={highlightRegisterLink ? 'true' : undefined}
+        >
+          ¿No tienes cuenta?{' '}
+          <Link
+            className={highlightRegisterLink ? styles['auth-screen__register-link--highlighted'] : ''}
+            to="/register"
+          >
+            Regístrate
+          </Link>
         </p>
 
         <p className={styles['auth-screen__footer']}>
-          ¿Has olvidado tu contraseña? <Link to={appPaths.forgotPassword}>Recuperarla</Link>
+          ¿Has olvidado tu contraseña? <Link to={appPaths.forgotPassword}>Recuperar contraseña</Link>
         </p>
       </section>
     </main>
