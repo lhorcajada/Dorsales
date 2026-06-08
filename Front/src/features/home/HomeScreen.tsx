@@ -71,7 +71,7 @@ export default function HomeScreen() {
         eyebrow="Bienvenido a Dorsales"
         title="Cuenta atrás para la asignación de dorsales"
         description="En esta sección encontrarás toda la información sobre el proceso de asignación de dorsales."
-        actions={contestState !== 'closed' ? <Link className={styles['home-screen__action']} to="/contest">Elegir dorsal</Link> : undefined}
+        actions={contestState === 'open' ? <Link className={styles['home-screen__action']} to="/contest">Elegir dorsal</Link> : undefined}
       />
 
       <div className={styles['home-screen__layout']}>

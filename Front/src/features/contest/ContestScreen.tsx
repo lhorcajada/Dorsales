@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -56,6 +56,30 @@ function getCurrentUserDorsal(catalog: ContestCatalogRow[], childIds: string[]) 
   return catalog.find((item) => item.assignedChildId !== null && childIds.includes(item.assignedChildId));
 }
 
+function isPendingOpen(contestOverview: ContestOverview | null, now: Date) {
+  if (!contestOverview) {
+    return false;
+  }
+
+  if (contestOverview.isPaused || (contestOverview.closesAt && now > contestOverview.closesAt)) {
+    return false;
+  }
+
+  if (contestOverview.opensAt && now < contestOverview.opensAt) {
+    return true;
+  }
+
+  return !contestOverview.isEnabled;
+}
+
+function isClosed(contestOverview: ContestOverview | null, now: Date) {
+  if (!contestOverview) {
+    return false;
+  }
+
+  return contestOverview.isPaused || (contestOverview.closesAt ? now > contestOverview.closesAt : false);
+}
+
 function buildConfirmationDialog(
   selectedDorsalNumber: number,
   currentUserDorsal: ContestCatalogRow | undefined,
@@ -81,6 +105,7 @@ export default function ContestScreen() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { pushNotification } = useNotifications();
+  const hasRedirectedForBlockedProcess = useRef(false);
   const [catalog, setCatalog] = useState<ContestCatalogRow[]>([]);
   const [contestOverview, setContestOverview] = useState<ContestOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +162,27 @@ export default function ContestScreen() {
       window.clearInterval(refreshInterval);
     };
   }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const pendingOpen = isPendingOpen(contestOverview, now);
+    const closed = isClosed(contestOverview, now);
+
+    if ((!pendingOpen && !closed) || hasRedirectedForBlockedProcess.current) {
+      return;
+    }
+
+    hasRedirectedForBlockedProcess.current = true;
+    pushNotification({
+      tone: 'info',
+      title: pendingOpen ? 'Proceso pendiente de apertura' : 'Proceso cerrado',
+      description: pendingOpen
+        ? 'Aún no puedes entrar en la selección de dorsal. Te llevamos al inicio.'
+        : 'La asignación está cerrada y no puedes entrar en la selección de dorsal. Te llevamos al inicio.',
+      durationMs: 6500,
+    });
+    navigate(appPaths.home, { replace: true });
+  }, [contestOverview, navigate, pushNotification]);
 
   useEffect(() => {
     if (!currentUser || pendingDorsal) {
