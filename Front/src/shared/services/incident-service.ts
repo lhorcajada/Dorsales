@@ -138,3 +138,19 @@ export async function fetchIncidentSummary() {
   const incidents = await loadIncidentsFromSupabase();
   return buildSummary(incidents);
 }
+
+export async function resolveIncident(incidentId: string) {
+  if (!hasSupabaseConfig()) {
+    return;
+  }
+
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from('incidents')
+    .update({ status: 'resolved' } as never)
+    .eq('id', incidentId);
+
+  if (error) {
+    throw error;
+  }
+}

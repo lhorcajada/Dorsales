@@ -98,6 +98,33 @@
   font-size: 0.92rem;
 }
 
+.incidents-screen__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+}
+
+.incidents-screen__resolve-button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.incidents-screen__resolve-button:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.incidents-screen__resolve-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .incidents-screen__badge--pending,
 .incidents-screen__badge--review,
 .incidents-screen__badge--resolved {
@@ -135,5 +162,13 @@
   .incidents-screen__card-header,
   .incidents-screen__meta {
     flex-direction: column;
+  }
+
+  .incidents-screen__actions {
+    justify-content: stretch;
+  }
+
+  .incidents-screen__resolve-button {
+    width: 100%;
   }
 }

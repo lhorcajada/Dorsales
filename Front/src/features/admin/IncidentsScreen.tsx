@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { PageHeader } from '../../shared/components/PageHeader/PageHeader';
 import { appPaths } from '../../router/paths';
-import { fetchIncidentSummary, fetchIncidents } from '../../shared/services/incident-service';
+import { fetchIncidentSummary, fetchIncidents, resolveIncident } from '../../shared/services/incident-service';
 import type { IncidentRecord, IncidentSummary } from '../../shared/types/incident';
 
 import styles from './IncidentsScreen.module.css';
@@ -70,6 +70,7 @@ export default function IncidentsScreen() {
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [summary, setSummary] = useState<IncidentSummary>({ total: 0, pending: 0, review: 0, resolved: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [resolvingIncidentId, setResolvingIncidentId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -95,6 +96,22 @@ export default function IncidentsScreen() {
       mounted = false;
     };
   }, []);
+
+  const handleResolveIncident = async (incidentId: string) => {
+    setResolvingIncidentId(incidentId);
+    setError(null);
+
+    try {
+      await resolveIncident(incidentId);
+      const [nextIncidents, nextSummary] = await Promise.all([fetchIncidents(), fetchIncidentSummary()]);
+      setIncidents(nextIncidents);
+      setSummary(nextSummary);
+    } catch (incidentError) {
+      setError(incidentError instanceof Error ? incidentError.message : 'No se pudo resolver la incidencia.');
+    } finally {
+      setResolvingIncidentId(null);
+    }
+  };
 
   return (
     <section className={styles['incidents-screen']}>
@@ -164,6 +181,22 @@ export default function IncidentsScreen() {
               <div className={styles['incidents-screen__meta']}>
                 <span>{getSeverityLabel(incident.severity)}</span>
                 <span>{new Date(incident.updatedAt).toLocaleString('es-ES')}</span>
+              </div>
+              <div className={styles['incidents-screen__actions']}>
+                <button
+                  type="button"
+                  className={styles['incidents-screen__resolve-button']}
+                  onClick={() => {
+                    void handleResolveIncident(incident.id);
+                  }}
+                  disabled={incident.status === 'resolved' || resolvingIncidentId === incident.id}
+                >
+                  {resolvingIncidentId === incident.id
+                    ? 'Resolviendo...'
+                    : incident.status === 'resolved'
+                      ? 'Incidencia resuelta'
+                      : 'Resolver incidencia'}
+                </button>
               </div>
             </article>
           );
