@@ -39,13 +39,13 @@ test.describe('Registro – jugador ya vinculado', () => {
     await page.goto('/register');
 
     // Wait for the catalog to load so the select field has an option.
-    await expect(page.getByLabel('Nombre del niño')).not.toBeDisabled({ timeout: 5000 });
+    await expect(page.getByLabel('Nombre del jugador')).not.toBeDisabled({ timeout: 5000 });
 
     // Fill in the registration form.
     await page.getByLabel('Nombre completo').fill('Usuario Test');
     await page.getByLabel('Email').fill('test@example.com');
     await page.getByLabel('Contraseña').fill('password123');
-    await page.getByLabel('Nombre del niño').selectOption('Jugador de prueba');
+    await page.getByLabel('Nombre del jugador').selectOption('Jugador de prueba');
 
     // Submit the form.
     await page.getByRole('button', { name: 'Crear cuenta' }).click();
@@ -83,13 +83,13 @@ test.describe('Registro – jugador ya vinculado', () => {
     await page.goto('/register');
 
     // Wait for the catalog to load.
-    await expect(page.getByLabel('Nombre del niño')).not.toBeDisabled({ timeout: 5000 });
+    await expect(page.getByLabel('Nombre del jugador')).not.toBeDisabled({ timeout: 5000 });
 
     // Fill in the registration form.
     await page.getByLabel('Nombre completo').fill('Otro Usuario');
     await page.getByLabel('Email').fill('nuevo@example.com');
     await page.getByLabel('Contraseña').fill('password123');
-    await page.getByLabel('Nombre del niño').selectOption('Jugador de prueba');
+    await page.getByLabel('Nombre del jugador').selectOption('Jugador de prueba');
 
     // Submit the form.
     await page.getByRole('button', { name: 'Crear cuenta' }).click();

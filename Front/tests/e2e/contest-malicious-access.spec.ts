@@ -143,13 +143,9 @@ test('bloquea un intento directo de entrar al concurso antes de que se abra la v
   try {
     await page.goto('/contest');
 
-    await expect(page.getByRole('heading', { name: 'Selecciona un dorsal' })).toBeVisible();
-    await page.getByRole('button', { name: 'Dorsal 07: Disponible' }).click();
-
-    const blockedDialog = page.getByRole('dialog').filter({ hasText: 'Asignación bloqueada' });
-    await expect(blockedDialog).toBeVisible();
-    await expect(blockedDialog.getByText('La ventana está cerrada. No puedes elegir dorsales hasta que se abra de nuevo.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Entendido' })).toBeVisible();
+    await page.waitForURL('**/home');
+    await expect(page.getByRole('heading', { name: 'Cuenta atrás para la asignación de dorsales' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Selecciona un dorsal' })).toHaveCount(0);
 
     expect(reserveDorsalCallCount).toBe(0);
   } finally {
@@ -206,8 +202,8 @@ test('muestra error cuando un usuario fuerza la confirmacion pero el backend blo
           contest_name: 'Asignacion de dorsales',
           is_enabled: true,
           is_paused: false,
-          opens_at: '2026-06-08T16:00:00.000Z',
-          closes_at: '2026-06-08T18:00:00.000Z',
+          opens_at: null,
+          closes_at: null,
         }),
       });
       return;
