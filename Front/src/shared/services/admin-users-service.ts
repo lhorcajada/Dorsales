@@ -13,11 +13,25 @@ type ChildRow = {
   full_name: string;
 };
 
+type ChildCatalogRow = {
+  full_name: string;
+};
+
 export interface RegisteredUserWithChildren {
   id: string;
   email: string;
   displayName: string;
   children: string[];
+}
+
+export interface PendingChildLinksSummary {
+  pendingPlayers: string[];
+  totalCatalogPlayers: number;
+  linkedPlayers: number;
+}
+
+function normalizeName(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 export async function fetchRegisteredUsersWithChildren() {
@@ -64,4 +78,58 @@ export async function fetchRegisteredUsersWithChildren() {
     displayName: profile.display_name,
     children: childrenByParent.get(profile.id) ?? [],
   }));
+}
+
+export async function fetchPendingChildLinks() {
+  const supabase = getSupabaseClient();
+
+  const [{ data: catalogRows, error: catalogError }, { data: childRows, error: childrenError }] = await Promise.all([
+    supabase
+      .from('child_name_catalog')
+      .select('full_name')
+      .eq('is_active', true)
+      .order('full_name', { ascending: true })
+      .returns<ChildCatalogRow[]>(),
+    supabase.from('children').select('full_name').returns<Array<Pick<ChildRow, 'full_name'>>>(),
+  ]);
+
+  if (catalogError) {
+    throw catalogError;
+  }
+
+  if (childrenError) {
+    throw childrenError;
+  }
+
+  const linkedNames = new Set((childRows ?? []).map((child) => normalizeName(child.full_name)));
+  const seenPending = new Set<string>();
+  const pendingPlayers = (catalogRows ?? [])
+    .filter((player) => {
+      const normalized = normalizeName(player.full_name);
+
+      if (linkedNames.has(normalized) || seenPending.has(normalized)) {
+        return false;
+      }
+
+      seenPending.add(normalized);
+      return true;
+    })
+    .map((player) => player.full_name);
+
+  return {
+    pendingPlayers,
+    totalCatalogPlayers: catalogRows?.length ?? 0,
+    linkedPlayers: linkedNames.size,
+  } satisfies PendingChildLinksSummary;
+}
+
+export async function deleteRegisteredUser(userId: string) {
+  const supabase = getSupabaseClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.rpc as any)('delete_user_by_admin', { p_user_id: userId });
+
+  if (error) {
+    throw error;
+  }
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
+import { ConfirmationPopup } from '../../shared/components/ConfirmationPopup/ConfirmationPopup';
 import {
+  deleteRegisteredUser,
   fetchRegisteredUsersWithChildren,
   type RegisteredUserWithChildren,
 } from '../../shared/services/admin-users-service';
@@ -11,6 +13,8 @@ export function RegisteredUsersSection() {
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserWithChildren[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<RegisteredUserWithChildren | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -49,6 +53,23 @@ export function RegisteredUsersSection() {
     };
   }, []);
 
+  const handleDeleteConfirm = async () => {
+    if (!pendingDeleteUser) return;
+
+    setIsDeleting(true);
+
+    try {
+      await deleteRegisteredUser(pendingDeleteUser.id);
+      setRegisteredUsers((current) => current.filter((u) => u.id !== pendingDeleteUser.id));
+      setPendingDeleteUser(null);
+    } catch (deleteError) {
+      setUsersError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el usuario.');
+      setPendingDeleteUser(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <article className={styles['registered-users']}>
       <div className={styles['registered-users__header']}>
@@ -66,19 +87,50 @@ export function RegisteredUsersSection() {
 
       {!usersLoading && !usersError && registeredUsers.length > 0 ? (
         <ul className={styles['registered-users__list']}>
-          {registeredUsers.map((user) => (
-            <li className={styles['registered-users__item']} key={user.id}>
-              <div>
-                <p className={styles['registered-users__name']}>{user.displayName}</p>
-                <p className={styles['registered-users__email']}>{user.email}</p>
-              </div>
-              <p className={styles['registered-users__children']}>
-                {user.children.length > 0 ? user.children.join(', ') : 'Sin niños vinculados'}
-              </p>
-            </li>
-          ))}
+          {registeredUsers.map((user) => {
+            const isUnlinked = user.children.length === 0;
+
+            return (
+              <li
+                className={`${styles['registered-users__item']} ${isUnlinked ? styles['registered-users__item--unlinked'] : ''}`}
+                key={user.id}
+              >
+                <div className={styles['registered-users__info']}>
+                  <p className={styles['registered-users__name']}>{user.displayName}</p>
+                  <p className={styles['registered-users__email']}>{user.email}</p>
+                </div>
+                <p className={styles['registered-users__children']}>
+                  {user.children.length > 0 ? user.children.join(', ') : 'Sin niños vinculados'}
+                </p>
+                {isUnlinked ? (
+                  <button
+                    className={styles['registered-users__delete-btn']}
+                    type="button"
+                    onClick={() => setPendingDeleteUser(user)}
+                  >
+                    Eliminar
+                  </button>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : null}
+
+      <ConfirmationPopup
+        cancelLabel="Cancelar"
+        confirmDisabled={isDeleting}
+        confirmLabel={isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+        description={
+          pendingDeleteUser
+            ? `Se eliminará permanentemente la cuenta de ${pendingDeleteUser.displayName} (${pendingDeleteUser.email}). Esta acción no se puede deshacer.`
+            : ''
+        }
+        open={pendingDeleteUser !== null}
+        title="¿Eliminar usuario?"
+        onCancel={() => setPendingDeleteUser(null)}
+        onConfirm={() => void handleDeleteConfirm()}
+      />
     </article>
   );
 }

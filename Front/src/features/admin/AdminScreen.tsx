@@ -10,6 +10,7 @@ import type { IncidentSummary } from '../../shared/types/incident';
 
 import { ContestScheduleForm } from './ContestScheduleForm';
 import { LiveAssignmentsSection } from './LiveAssignmentsSection';
+import { PendingPlayersSection } from './PendingPlayersSection';
 import { RegisteredUsersSection } from './RegisteredUsersSection';
 import { getAssignmentWindowSummary } from './adminScreenHelpers';
 import styles from './AdminScreen.module.css';
@@ -134,6 +135,8 @@ export default function AdminScreen() {
       </div>
 
       <LiveAssignmentsSection />
+
+      <PendingPlayersSection />
 
       <RegisteredUsersSection />
     </section>

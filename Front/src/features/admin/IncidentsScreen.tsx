@@ -50,6 +50,22 @@ function getIncidentTitleLabel(title: string) {
   return INCIDENT_TITLE_LABELS[title] ?? title;
 }
 
+function getIncidentLinkInfo(incident: IncidentRecord) {
+  if (incident.kind !== 'child_already_linked') {
+    return null;
+  }
+
+  const childName = incident.details.childName?.trim();
+
+  if (!childName) {
+    return null;
+  }
+
+  return {
+    childName,
+  };
+}
+
 export default function IncidentsScreen() {
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [summary, setSummary] = useState<IncidentSummary>({ total: 0, pending: 0, review: 0, resolved: 0 });
@@ -120,26 +136,38 @@ export default function IncidentsScreen() {
           </article>
         ) : null}
 
-        {incidents.map((incident) => (
-          <article key={incident.id} className={styles['incidents-screen__card']}>
-            <div className={styles['incidents-screen__card-header']}>
-              <div>
-                <p className={styles['incidents-screen__eyebrow']}>{incident.kind}</p>
-                <h3 className={styles['incidents-screen__title']}>{getIncidentTitleLabel(incident.title)}</h3>
+        {incidents.map((incident) => {
+          const linkedInfo = getIncidentLinkInfo(incident);
+
+          return (
+            <article key={incident.id} className={styles['incidents-screen__card']}>
+              <div className={styles['incidents-screen__card-header']}>
+                <div>
+                  <p className={styles['incidents-screen__eyebrow']}>{incident.kind}</p>
+                  <h3 className={styles['incidents-screen__title']}>{getIncidentTitleLabel(incident.title)}</h3>
+                </div>
+                <span className={styles[`incidents-screen__badge--${incident.status}`]}>{getStatusLabel(incident.status)}</span>
               </div>
-              <span className={styles[`incidents-screen__badge--${incident.status}`]}>{getStatusLabel(incident.status)}</span>
-            </div>
-            <p className={styles['incidents-screen__copy']}>{incident.description}</p>
-            <div className={styles['incidents-screen__meta']}>
-              <span>{incident.userEmail}</span>
-              <span>{incident.dorsalNumber === null ? 'Sin dorsal asociado' : `Dorsal ${formatDorsalNumber(incident.dorsalNumber)}`}</span>
-            </div>
-            <div className={styles['incidents-screen__meta']}>
-              <span>{getSeverityLabel(incident.severity)}</span>
-              <span>{new Date(incident.updatedAt).toLocaleString('es-ES')}</span>
-            </div>
-          </article>
-        ))}
+              <p className={styles['incidents-screen__copy']}>{incident.description}</p>
+              <div className={styles['incidents-screen__meta']}>
+                <span>{incident.userEmail}</span>
+                <span>{incident.dorsalNumber === null ? 'Sin dorsal asociado' : `Dorsal ${formatDorsalNumber(incident.dorsalNumber)}`}</span>
+              </div>
+              <div className={styles['incidents-screen__meta']}>
+                <span>{incident.userName ? `Usuario: ${incident.userName}` : 'Usuario: sin especificar'}</span>
+              </div>
+              {linkedInfo ? (
+                <div className={styles['incidents-screen__meta']}>
+                  <span>{`Jugador: ${linkedInfo.childName}`}</span>
+                </div>
+              ) : null}
+              <div className={styles['incidents-screen__meta']}>
+                <span>{getSeverityLabel(incident.severity)}</span>
+                <span>{new Date(incident.updatedAt).toLocaleString('es-ES')}</span>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
   );

@@ -216,9 +216,12 @@ async function isChildAlreadyLinked(childName: string) {
 async function createChildAlreadyLinkedIncident(
   userId: string | null,
   userEmail: string,
+  userName: string,
   childName: string,
   cause: string,
 ) {
+  const normalizedUserName = userName.trim();
+
   await registerIncident({
     userId,
     userEmail,
@@ -230,6 +233,7 @@ async function createChildAlreadyLinkedIncident(
     source: 'sign_up',
     details: {
       child_name: childName.trim(),
+      user_name: normalizedUserName,
       error: cause,
     },
   });
@@ -689,6 +693,7 @@ export async function signUp(input: AuthRegisterInput) {
         await createChildAlreadyLinkedIncident(
           null,
           input.email,
+          input.name,
           normalizedChildName,
           'Child already linked before sign up',
         );
@@ -719,6 +724,7 @@ export async function signUp(input: AuthRegisterInput) {
         await createChildAlreadyLinkedIncident(
           null,
           input.email,
+          input.name,
           input.childName,
           error instanceof Error ? error.message : 'User already registered',
         );
@@ -753,6 +759,7 @@ export async function signUp(input: AuthRegisterInput) {
           await createChildAlreadyLinkedIncident(
             data.session.user.id,
             input.email,
+            input.name,
             normalizedChildName,
             loadOrCreateError instanceof Error
               ? loadOrCreateError.message
