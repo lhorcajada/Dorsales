@@ -41,13 +41,37 @@ function getSeverityLabel(severity: IncidentRecord['severity']) {
   return 'Baja';
 }
 
-const INCIDENT_TITLE_LABELS: Record<string, string> = {
-  auth_error: 'Error de autenticacion',
+const INCIDENT_KIND_LABELS: Record<string, string> = {
+  // Authentication & registration
+  auth_error: 'Error de autenticación',
   child_already_linked: 'Jugador ya vinculado',
+  
+  // Contest state validation
+  contest_closed: 'Concurso cerrado',
+  
+  // Child & user validation
+  child_missing: 'Hijo no registrado',
+  ownership_mismatch: 'Acceso no autorizado',
+  
+  // Dorsal availability validation
+  dorsal_missing: 'Dorsal inexistente',
+  dorsal_locked: 'Dorsal bloqueado',
+  dorsal_already_assigned: 'Dorsal ya asignado',
+  dorsal_already_reserved: 'Dorsal ya reservado',
+  
+  // Duplicate assignments
+  duplicate_assignment: 'Choque de reserva',
+  duplicate_child_assignment: 'Múltiples dorsales',
+  
+  // Release errors
+  unauthorized_release: 'Liberación no autorizada',
+  
+  // Generic
+  unexpected_error: 'Error inesperado',
 };
 
-function getIncidentTitleLabel(title: string) {
-  return INCIDENT_TITLE_LABELS[title] ?? title;
+function getIncidentKindLabel(kind: string) {
+  return INCIDENT_KIND_LABELS[kind] ?? kind;
 }
 
 function getIncidentLinkInfo(incident: IncidentRecord) {
@@ -160,8 +184,8 @@ export default function IncidentsScreen() {
             <article key={incident.id} className={styles['incidents-screen__card']}>
               <div className={styles['incidents-screen__card-header']}>
                 <div>
-                  <p className={styles['incidents-screen__eyebrow']}>{incident.kind}</p>
-                  <h3 className={styles['incidents-screen__title']}>{getIncidentTitleLabel(incident.title)}</h3>
+                  <p className={styles['incidents-screen__eyebrow']}>{getIncidentKindLabel(incident.kind)}</p>
+                  <h3 className={styles['incidents-screen__title']}>{incident.title}</h3>
                 </div>
                 <span className={styles[`incidents-screen__badge--${incident.status}`]}>{getStatusLabel(incident.status)}</span>
               </div>
