@@ -9,6 +9,7 @@ import { fetchIncidentSummary } from '../../shared/services/incident-service';
 import type { IncidentSummary } from '../../shared/types/incident';
 
 import { ContestScheduleForm } from './ContestScheduleForm';
+import { LiveAssignmentsSection } from './LiveAssignmentsSection';
 import { RegisteredUsersSection } from './RegisteredUsersSection';
 import { getAssignmentWindowSummary } from './adminScreenHelpers';
 import styles from './AdminScreen.module.css';
@@ -131,6 +132,8 @@ export default function AdminScreen() {
           </Link>
         </article>
       </div>
+
+      <LiveAssignmentsSection />
 
       <RegisteredUsersSection />
     </section>

@@ -1,0 +1,65 @@
+.live-assignments {
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.live-assignments__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.live-assignments__title {
+  margin: 0;
+}
+
+.live-assignments__count {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.live-assignments__copy {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.live-assignments__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.live-assignments__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.live-assignments__dorsal {
+  margin: 0;
+  font-weight: 700;
+}
+
+.live-assignments__meta {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.live-assignments__time {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
