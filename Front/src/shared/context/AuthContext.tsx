@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Session } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 import { AuthContext, type AuthContextValue } from './auth-context';
 import {
@@ -9,6 +9,7 @@ import {
   signIn,
   signOut,
   signUp,
+  logUserLogin,
 } from '../services/auth-service';
 import type { AuthCredentials, AuthRegisterInput, AuthUser } from '../types/auth';
 import { getSupabaseClient, hasSupabaseConfig } from '../services/supabase';
@@ -28,14 +29,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return undefined;
     }
 
-    const syncSession = async (session: Session | null) => {
+    const syncSession = async (session: Session | null, authEvent?: AuthChangeEvent) => {
       try {
         setSession(session);
+
         const nextUser = await getSignedInUser();
 
         if (mounted) {
           setCurrentUser(nextUser);
           setError(null);
+
+          const shouldLogLogin = authEvent === 'TOKEN_REFRESHED';
+
+          if (shouldLogLogin && nextUser) {
+            void logUserLogin();
+          }
         }
       } catch (syncError) {
         if (mounted) {
@@ -65,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = hasSupabaseConfig() ? getSupabaseClient() : null;
     const data = supabase
       ? supabase.auth.onAuthStateChange((_event, session) => {
-          void syncSession(session);
+          void syncSession(session, _event);
         })
       : null;
 
@@ -79,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     const nextUser = await signIn(credentials);
     setCurrentUser(nextUser);
+    void logUserLogin();
   };
 
   const handleRegister = async (input: AuthRegisterInput) => {

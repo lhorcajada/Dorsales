@@ -671,6 +671,9 @@ export async function signIn(credentials: AuthCredentials) {
       throw buildUserWithoutLinkedChildError();
     }
 
+    // Log successful login
+    void logUserLogin();
+
     return nextUser;
   } catch (loadError) {
     await createAuthErrorIncident({
@@ -792,6 +795,20 @@ export async function signUp(input: AuthRegisterInput) {
   }
 
   return null;
+}
+
+export async function logUserLogin() {
+  if (!hasSupabaseConfig()) {
+    return;
+  }
+
+  try {
+    const supabase = getSupabaseClient();
+    await supabase.rpc('log_login');
+  } catch (error) {
+    // Don't fail authentication if logging fails
+    console.warn('Failed to log user login:', error);
+  }
 }
 
 export async function signOut() {
