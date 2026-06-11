@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { fetchLiveAssignments, subscribeToLiveAssignments, type LiveAssignment } from '../../shared/services/admin-live-assignments-service';
 
+import { ExportAssignmentsPdfButton } from './ExportAssignmentsPdfButton';
 import styles from './LiveAssignmentsSection.module.css';
 
 const MAX_VISIBLE_ASSIGNMENTS = 12;
@@ -56,7 +57,10 @@ export function LiveAssignmentsSection() {
     <article className={styles['live-assignments']}>
       <div className={styles['live-assignments__header']}>
         <h3 className={styles['live-assignments__title']}>Asignaciones en tiempo real</h3>
-        <p className={styles['live-assignments__count']}>{liveAssignments.length} recientes</p>
+        <div className={styles['live-assignments__actions']}>
+          <p className={styles['live-assignments__count']}>{liveAssignments.length} recientes</p>
+          <ExportAssignmentsPdfButton />
+        </div>
       </div>
 
       {error ? <p className={styles['live-assignments__copy']}>{error}</p> : null}

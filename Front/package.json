@@ -20,6 +20,8 @@
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "jose": "^5.10.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.28.0"
