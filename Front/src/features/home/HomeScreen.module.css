@@ -26,6 +26,14 @@
   font-size: 0.76rem;
 }
 
+.home-screen__status-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
 .home-screen__helper {
   margin: 1rem 0 0;
   color: var(--color-text-muted);
@@ -66,7 +74,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
   padding: 0.7rem 0.95rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
@@ -130,6 +137,42 @@
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
 }
 
+.home-screen__cta-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.home-screen__cta {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: min(100%, 30rem);
+  min-height: 4rem;
+  padding: 1rem 1.5rem;
+  border-radius: 999px;
+  color: #07111f;
+  font-size: clamp(1.1rem, 2.2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.home-screen__cta:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.home-screen__cta:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
 .home-screen__action--secondary {
   margin-left: 0.75rem;
   border: 1px solid var(--color-border);
@@ -144,6 +187,51 @@
 }
 
 @media (max-width: 600px) {
+  .home-screen {
+    gap: 0.85rem;
+  }
+
+  .home-screen__hero,
+  .home-screen__stats,
+  .home-screen__assigned {
+    padding: 0.95rem;
+  }
+
+  .home-screen__eyebrow {
+    margin-bottom: 0;
+  }
+
+  .home-screen__status-row {
+    margin-top: 0.7rem;
+    align-items: flex-start;
+  }
+
+  .home-screen__status {
+    margin-bottom: 0.75rem;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .home-screen__opening-info {
+    margin: 0.6rem 0;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .home-screen__cta-wrap {
+    margin-top: 0.85rem;
+  }
+
+  .home-screen__cta {
+    min-height: 3.3rem;
+    padding: 0.75rem 1.1rem;
+    font-size: clamp(1rem, 5vw, 1.2rem);
+  }
+
+  .home-screen__helper {
+    margin-top: 0.65rem;
+    line-height: 1.35;
+    font-size: 0.93rem;
+  }
+
   .home-screen__action--secondary {
     margin-left: 0;
     margin-top: 0.75rem;

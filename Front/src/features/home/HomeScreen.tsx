@@ -21,6 +21,8 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const contestState = getContestHomeState(overview, now);
   const countdownTarget = getCountdownTarget(overview, contestState);
+  const canChooseDorsal = contestState === 'open' || (contestState === 'pending-open' && Boolean(overview?.opensAt && now >= overview.opensAt));
+    
 
   useEffect(() => {
     let mounted = true;
@@ -69,17 +71,22 @@ export default function HomeScreen() {
     <section className={styles['home-screen']}>
       <PageHeader
         eyebrow="Bienvenido a Dorsales"
-        title="Cuenta atrás para la asignación de dorsales"
-        description="En esta sección encontrarás toda la información sobre el proceso de asignación de dorsales."
-        actions={contestState === 'open' ? <Link className={styles['home-screen__action']} to="/contest">Elegir dorsal</Link> : undefined}
+        title="Asignación de dorsales"
+        description=""
       />
 
       <div className={styles['home-screen__layout']}>
         <article className={styles['home-screen__hero']}>
-          <p className={styles['home-screen__eyebrow']}>Estado del proceso</p>
-          <div className={styles['home-screen__status']} aria-live="polite">
-            <span className={styles['home-screen__status-label']}>Proceso</span>
-            <strong className={styles['home-screen__status-value']}>{getContestStateLabel(contestState)}</strong>
+          {contestState !== 'closed' ? (
+            <Countdown
+              targetDate={countdownTarget}
+              label={contestState === 'open' ? 'Tiempo restante para cerrar el proceso de asignación de dorsales' : 'Tiempo restante para iniciar el proceso de asignación de dorsales'}
+            />
+          ) : null}
+          <div className={styles['home-screen__status-row']}>
+            <div className={styles['home-screen__status']} aria-live="polite">
+              <strong className={styles['home-screen__status-value']}>{getContestStateLabel(contestState)}</strong>
+            </div>
           </div>
           {contestState === 'pending-open' && overview?.opensAt ? (
             <div className={styles['home-screen__opening-info']}>
@@ -89,11 +96,12 @@ export default function HomeScreen() {
               </p>
             </div>
           ) : null}
-          {contestState !== 'closed' ? (
-            <Countdown
-              targetDate={countdownTarget}
-              label={contestState === 'open' ? 'Tiempo restante para cerrar el proceso de asignación de dorsales' : 'Tiempo restante para iniciar el proceso de asignación de dorsales'}
-            />
+          {canChooseDorsal ? (
+            <div className={styles['home-screen__cta-wrap']}>
+              <Link className={styles['home-screen__cta']} to="/contest">
+                Elegir dorsal
+              </Link>
+            </div>
           ) : null}
           <p
             className={
